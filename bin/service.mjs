@@ -73,7 +73,7 @@ export function serviceFor({ root, server, log, host, port }) {
         return true;
       },
       async uninstall() { await fsp.rm(old, { force: true }); if (!fs.existsSync(file)) return false; await fsp.rm(file); return true; },
-      async state() { if (await up()) return 'running'; return fs.existsSync(file) ? 'stopped' : 'missing'; },
+      async state() { if (!fs.existsSync(file)) return 'missing'; return (await up()) ? 'running' : 'stopped'; },
     };
   }
 
