@@ -15,6 +15,11 @@ import { wx } from '../life/weather.js';
 import { hash, sessions, subs, workers } from '../people/workers.js';
 import { TYPE_ICON, icon } from './icons.js';
 import { openSession } from './session-drawer.js';
+import { doingOf } from './activity.js';
+import { puppet } from './puppet.js';
+import { drawCounter, drawDesk, drawLight, drawLive, drawStill, roomHooks } from './cafe-room.js';
+import { TOKEN } from '../net/live.js';
+import { DEMO, demoLog } from '../demo/demo.js';
 import { t as tr } from '../../i18n/index.js';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
@@ -139,8 +144,11 @@ function brainMain(a, s, now) {
   }
   // resting: somewhere else, for a while
   if (a.path.length) { a.think = 1; return; }
-  const spots = [[L.counter - 14, L.front], [L.sofa, L.front], [rnd(L.win0 + 10, L.win1 - 10), L.front], [rnd(L.door + 30, w - 30), L.front]];
-  const [x, y] = spots[Math.floor(Math.random() * spots.length)];
+  // somewhere nobody else is going: the counter, the sofa, the window, anywhere on the floor
+  const spots = [[L.counter - 14, L.front], [L.sofa - 16, L.front], [L.sofa + 16, L.front], [rnd(L.win0 + 10, L.win1 - 10), L.front], [rnd(L.door + 40, w - 30), L.front], [rnd(L.door + 40, w - 30), L.mid + 2]];
+  const busy = [...actors.values()].filter((o) => o !== a).map((o) => o.path[0]?.x ?? o.x);
+  let x, y;
+  for (let k = 0; k < 8; k++) { [x, y] = spots[Math.floor(Math.random() * spots.length)]; if (!busy.some((bx) => Math.abs(bx - x) < 18)) break; }
   goTo(a, x, y, Math.random() < 0.18, () => { a.face = x > w * 0.7 ? -1 : Math.random() < 0.5 ? 1 : -1; if (Math.abs(x - (L.counter - 14)) < 2) order(); });
   a.think = rnd(6, 14);
 }
@@ -245,12 +253,12 @@ function layout() {
   const Wp = Math.round(W * dpr), Hp = Math.round(H * dpr); if (cv.width !== Wp || cv.height !== Hp) { cv.width = Wp; cv.height = Hp; }
   Object.assign(L, { floor: Math.round(h * 0.7), back: Math.round(h * 0.78), mid: Math.round(h * 0.86), front: Math.round(h * 0.95), bar: Math.round(h * 0.75), door: 18 });
   L.win0 = Math.round(w * 0.1); L.win1 = Math.round(w * 0.6); L.winTop = Math.round(h * 0.1); L.winBot = Math.round(h * 0.5);
-  L.counter = Math.round(w * 0.7); L.counterW = Math.round(w * 0.13); L.sofa = Math.round(w * 0.91);
+  L.counter = Math.round(w * 0.7); L.counterW = Math.max(56, Math.round(w * 0.13)); L.sofa = Math.round(w * 0.86); L.wain = L.floor - 34;
+  L.lamps = [L.win0 + 30, (L.win0 + L.win1) / 2, L.win1 - 30, L.counter + L.counterW / 2, L.sofa];
   const n = Math.max(3, [...actors.values()].filter((a) => a.kind === 'main' && !a.gone).length);
   const room = L.win1 - L.win0 - 30; L.perRow = Math.max(2, Math.min(n, Math.floor(room / 40)));
   L.deskGap = Math.max(40, Math.min(70, room / L.perRow)); L.desk0 = L.win0 + 24;
 }
-const R = (x, y, ww, hh, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(ww), Math.round(hh)); };
 function lightNow() {
   const P = art?.places[view] || {}, hr = officeNow().getHours();
   if (wx.rain > 0.3 && P.rain) return 'rain';
@@ -271,68 +279,17 @@ function windowPic(ww, hh) {
   winCache = { key, c };
   return c;
 }
-function drawRoom(t) {
-  const dark = night, wall = dark ? '#3B2E3F' : '#E9D9C1', wall2 = dark ? '#33283A' : '#DCC8AC';
-  R(0, 0, w, L.floor, wall);
-  for (let x = 0; x < w; x += 12) R(x, 0, 6, L.floor, wall2);   // striped wallpaper
-  R(0, 0, w, 6, dark ? '#2A1E22' : '#7A5236'); R(0, 6, w, 2, dark ? '#1E151A' : '#5E3E28');   // the ceiling beam
-  // the big window and what is outside
-  const wx0 = L.win0, wy0 = L.winTop, ww = L.win1 - L.win0, wh = L.winBot - L.winTop, pic = windowPic(ww, wh);
-  R(wx0 - 4, wy0 - 4, ww + 8, wh + 8, '#6B4630');
-  if (pic) g.drawImage(pic, wx0, wy0, ww, wh); else R(wx0, wy0, ww, wh, dark ? '#1B2440' : '#9CC8EE');
-  if (wx.rain > 0.15 && !reduceMotion) { g.fillStyle = 'rgba(210,225,255,.45)'; for (let i = 0; i < 40; i++) { const rx = wx0 + ((i * 53 + t * 90) % ww), ry = wy0 + ((i * 37 + t * 260) % wh); g.fillRect(Math.round(rx), Math.round(ry), 1, 4); } }
-  for (let x = wx0 + 48; x < wx0 + ww - 10; x += 48) R(x - 1, wy0, 3, wh, '#6B4630');
-  R(wx0, wy0 + Math.round(wh * 0.62), ww, 2, '#6B4630');
-  R(wx0 - 6, wy0 + wh + 2, ww + 12, 4, '#8A5E40');   // the sill, plants on it
-  for (let x = wx0 + 14; x < wx0 + ww - 10; x += 72) { R(x, wy0 + wh - 6, 8, 8, '#B5653A'); R(x - 2, wy0 + wh - 14, 12, 8, '#4E8C4A'); R(x + 2, wy0 + wh - 18, 4, 5, '#5FA85A'); }
-  // the door, with its sign
-  R(L.door - 14, L.floor - 64, 28, 64, '#5A3A26'); R(L.door - 11, L.floor - 61, 22, 61, '#7C5236'); R(L.door - 8, L.floor - 56, 16, 22, dark ? '#F3C76A' : '#BFE3F5');
-  R(L.door + 6, L.floor - 30, 3, 3, '#F3D27A'); R(L.door - 12, L.floor - 76, 24, 9, '#2B1D17');
-  g.fillStyle = '#FF7AB6'; g.font = '700 6px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('OPEN', L.door, L.floor - 71.5);
-  // the menu board and the clock over the counter
-  const cx = L.counter, cw = L.counterW;
-  R(cx - 4, L.winTop, cw + 8, 34, '#2B2A2A'); R(cx - 2, L.winTop + 2, cw + 4, 30, '#1E3B2E');
-  g.fillStyle = '#F6E6C4'; g.font = '700 7px monospace'; g.textAlign = 'center'; g.fillText('CLAUDE CAFÉ', cx + cw / 2, L.winTop + 9);
-  g.font = '5px monospace'; g.fillStyle = '#C9E8D2'; g.fillText('LATTE · TOKENS · BUGS', cx + cw / 2, L.winTop + 18); g.fillText('GIT PUSH ☕ 25K', cx + cw / 2, L.winTop + 25);
-  const ck = { x: L.sofa, y: L.winTop + 14 }, d = officeNow(), ang = (k, n) => (k / n) * Math.PI * 2 - Math.PI / 2;
-  g.fillStyle = '#F7F1E6'; g.beginPath(); g.arc(ck.x, ck.y, 10, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#6B4630'; g.lineWidth = 2; g.stroke();
-  g.lineWidth = 1.5; g.strokeStyle = '#2B1D17'; g.beginPath(); g.moveTo(ck.x, ck.y); g.lineTo(ck.x + Math.cos(ang(d.getHours() % 12 + d.getMinutes() / 60, 12)) * 5, ck.y + Math.sin(ang(d.getHours() % 12 + d.getMinutes() / 60, 12)) * 5); g.stroke();
-  g.lineWidth = 1; g.beginPath(); g.moveTo(ck.x, ck.y); g.lineTo(ck.x + Math.cos(ang(d.getMinutes(), 60)) * 8, ck.y + Math.sin(ang(d.getMinutes(), 60)) * 8); g.stroke();
-  // the floor: wooden boards
-  R(0, L.floor, w, h - L.floor, dark ? '#4A3328' : '#A8744C');
-  for (let y = L.floor + 4, i = 0; y < h; y += 7, i++) { R(0, y, w, 1, dark ? '#3A281F' : '#8E5F3D'); for (let x = (i % 2) * 22; x < w; x += 44) R(x, y - 6, 1, 6, dark ? '#3A281F' : '#8E5F3D'); }
-  R(0, L.floor - 3, w, 3, dark ? '#2A1E22' : '#6B4630');
-  // pendant lamps (they glow after dark)
-  for (const lx of [L.win0 + 30, (L.win0 + L.win1) / 2, L.win1 - 30, L.counter + cw / 2, L.sofa]) {
-    R(lx, 8, 1, 16, '#2B1D17'); R(lx - 5, 24, 11, 5, '#2B2A2A'); R(lx - 2, 29, 5, 2, '#FFE7A8');
-    if (dark) { const gr = g.createRadialGradient(lx, 32, 2, lx, 32, 70); gr.addColorStop(0, 'rgba(255,214,140,.38)'); gr.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = gr; g.fillRect(lx - 70, 0, 140, h); }
+// the room's still part, drawn into a picture of its own when it changes (size, day or night, the view, the desks)
+let still = { key: '', c: null };
+function stillRoom(pic, n) {
+  const key = `${cv.width}x${cv.height}|${S}|${night}|${bgUrl}|${!!pic}|${n}`;
+  if (still.key !== key) {
+    const c = still.c || document.createElement('canvas'); c.width = cv.width; c.height = cv.height;
+    const x = c.getContext('2d'); x.setTransform(dpr * S, 0, 0, dpr * S, 0, 0); x.imageSmoothingEnabled = false; x.clearRect(0, 0, w, h);
+    drawStill(x, L, { w, h, night, pic });
+    still = { key, c };
   }
-}
-function drawDesk(i, t) {
-  {
-    const { x, y } = desk(i), who = [...actors.values()].find((a) => a.kind === 'main' && a.desk === i && !a.gone);
-    const st = who ? sessions.get(who.sid)?.status : null, on = st === 'work' || st === 'wait';
-    R(x - 22, y - 20, 34, 4, '#8A5E40'); R(x - 20, y - 16, 30, 16, '#6B4630'); R(x - 18, y - 14, 26, 1, '#7C5236');   // the desk, its front panel
-    R(x - 4, y - 31, 14, 10, '#2B2A2A');   // the laptop's lid, the screen facing its owner
-    R(x - 3, y - 30, 12, 8, on ? (st === 'wait' ? (Math.sin(t * 6) > 0 ? '#FFB020' : '#7A5A10') : `rgba(110,200,255,${0.75 + 0.25 * Math.sin(t * 9 + i)})`) : '#3A4250');
-    R(x - 6, y - 21, 18, 1, '#9AA4B2');
-    if (on && !reduceMotion && st === 'work') for (let k = 0; k < 3; k++) R(x - 2 + k * 4, y - 28 + ((t * 8 + k * 3 + i) % 5), 2, 1, '#E8F6FF');   // lines of code scrolling
-    R(x + 12, y - 24, 4, 4, '#F2F2F2'); R(x + 16, y - 23, 1, 2, '#F2F2F2');   // a mug
-  }
-}
-function drawCounter() {
-  const x = L.counter, cw = L.counterW, y = L.back;
-  R(x, y - 24, cw, 24, '#5A3A26'); R(x - 3, y - 27, cw + 6, 4, '#C9A27A'); for (let k = x + 4; k < x + cw - 2; k += 10) R(k, y - 20, 6, 16, '#6B4630');
-  R(x + 4, y - 40, 14, 13, '#B9BEC6'); R(x + 6, y - 37, 10, 4, '#2B2A2A'); R(x + 9, y - 32, 4, 2, '#3A3030');   // the espresso machine
-  if (!reduceMotion && Math.random() < 0.06) steam(x + 11, y - 42, 1);
-  for (let k = 0; k < 3; k++) R(x + cw - 20 + k * 6, y - 31, 4, 4, ['#F2F2F2', '#FFCF8A', '#F2F2F2'][k]);
-}
-// the sofa and a tall plant in the corner
-function drawLounge(t) {
-  const sx = L.sofa;
-  R(sx - 26, L.front - 22, 52, 10, '#C2577A'); R(sx - 28, L.front - 32, 8, 22, '#A8466A'); R(sx + 20, L.front - 32, 8, 22, '#A8466A'); R(sx - 24, L.front - 34, 48, 12, '#D16A8E');
-  R(sx - 24, L.front - 12, 3, 12, '#4A2E22'); R(sx + 21, L.front - 12, 3, 12, '#4A2E22');
-  R(w - 12, L.front - 12, 10, 12, '#B5653A'); for (let k = 0; k < 5; k++) R(w - 16 + k * 3, L.front - 30 + Math.abs(k - 2) * 4 + Math.sin(t * 1.5 + k) * 0.8, 3, 18 - Math.abs(k - 2) * 4, k % 2 ? '#4E8C4A' : '#5FA85A');
+  return still.c;
 }
 function drawActor(a) {
   const sp = art.sprites[a.sprite], im = sheet(a.sprite), fr = frameOf(a); if (!sp || !im || !fr) return;
@@ -348,26 +305,35 @@ function drawActor(a) {
   a.top = a.y - a.z - tall;   // (the top of the head, for the bubble)
   a.box = { x0: a.x - 12 * k, x1: a.x + 12 * k, y0: a.top, y1: a.y };
 }
-// labels and bubbles at screen resolution, over the pixels
+// names and bubbles at screen resolution, over the pixels. A name shows over whoever works, waits, speaks, or is
+// pointed at; a label that would land on another moves up above it.
 function drawLabels(now) {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  for (const a of [...actors.values()].sort((p, q) => p.y - q.y)) {
+  const taken = [];
+  const place = (x, y, ww, hh) => {   // (bottom-up: the first free spot at or above y)
+    for (let k = 0; k < 8; k++) { if (!taken.some((r) => x < r.x + r.w && x + ww > r.x && y < r.y + r.h && y + hh > r.y)) break; y -= hh + 3; }
+    taken.push({ x, y, w: ww, h: hh }); return y;
+  };
+  for (const a of [...actors.values()].sort((p, q) => q.y - p.y)) {
     if (a.alpha < 0.3 || a.top == null) continue;
     const X = a.x * S, Y = a.top * S;
-    const st = a.kind === 'main' ? sessions.get(a.sid)?.status : null;
-    let y = Y - 6;
-    if (a.kind === 'main' && a.name) {
-      g.font = '700 11px system-ui, sans-serif'; const tw = g.measureText(a.name).width + 18;
-      g.fillStyle = 'rgba(20,14,30,.78)'; g.beginPath(); g.roundRect(X - tw / 2, y - 16, tw, 16, 8); g.fill();
-      g.fillStyle = st === 'wait' ? '#FFB020' : st === 'work' ? '#3DDC84' : '#9AA4B2'; g.beginPath(); g.arc(X - tw / 2 + 8, y - 8, 3, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(a.name, X - tw / 2 + 14, y - 7.5); y -= 20;
+    const st = a.kind === 'main' ? sessions.get(a.sid)?.status : null, talking = a.say && now < a.sayUntil;
+    let y = Y - 4;
+    if (a.kind === 'main' && a.name && (st !== 'rest' || talking || hover === a || picked === a.key)) {
+      g.font = '700 11px system-ui, sans-serif'; const name = short(a.name, 20), tw = g.measureText(name).width + 18;
+      const ty = place(X - tw / 2, y - 16, tw, 16);
+      g.fillStyle = 'rgba(20,14,30,.8)'; g.beginPath(); g.roundRect(X - tw / 2, ty, tw, 16, 8); g.fill();
+      g.fillStyle = st === 'wait' ? '#FFB020' : st === 'work' ? '#3DDC84' : '#9AA4B2'; g.beginPath(); g.arc(X - tw / 2 + 8, ty + 8, 3, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(name, X - tw / 2 + 14, ty + 8.5); y = ty - 4;
     }
-    if (a.say && now < a.sayUntil) {
-      g.font = '600 12px system-ui, sans-serif'; const txt = a.say, tw = Math.min(240, g.measureText(txt).width) + 16, bh = 22;
+    if (talking) {
+      g.font = '600 12px system-ui, sans-serif'; const txt = short(a.say, 40), tw = Math.min(260, g.measureText(txt).width) + 16, bh = 22;
+      const by = place(X - tw / 2, y - bh - 6, tw, bh + 6);
       const col = a.sayKind === 'wait' ? '#FFB020' : a.sayKind === 'fail' ? '#E04E5E' : '#FFFFFF';
       g.fillStyle = col; g.strokeStyle = '#2B1D2F'; g.lineWidth = 2;
-      g.beginPath(); g.roundRect(X - tw / 2, y - bh - 6, tw, bh, 6); g.moveTo(X - 5, y - 6); g.lineTo(X, y); g.lineTo(X + 5, y - 6); g.fill(); g.stroke();
-      g.fillStyle = col === '#FFFFFF' ? '#1E1626' : '#1E1200'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, X, y - bh / 2 - 5.5, 240);
+      g.beginPath(); g.roundRect(X - tw / 2, by, tw, bh, 6); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(X - 5, by + bh); g.lineTo(X, by + bh + 6); g.lineTo(X + 5, by + bh); g.fill();
+      g.fillStyle = col === '#FFFFFF' ? '#1E1626' : '#1E1200'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, X, by + bh / 2 + 0.5, 260);
     }
   }
 }
@@ -404,16 +370,23 @@ export function drawCafe() {
   }
   for (const a of actors.values()) stepActor(a, dt);
   stepParts(dt);
+  const n = Math.max(3, [...actors.values()].filter((a) => a.kind === 'main' && !a.gone).length);
+  const pic = windowPic(L.win1 - L.win0, L.winBot - L.winTop), env = { w, h, t: now, night, rain: wx.rain, still: reduceMotion, now: officeNow(), screens: [] };
+  g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(stillRoom(pic, n), 0, 0);
   g.setTransform(dpr * S, 0, 0, dpr * S, 0, 0); g.imageSmoothingEnabled = false;
-  drawRoom(now);
+  drawLive(g, L, env);
   // furniture and people back to front; a desk just in front of whoever stands at it
-  const n = Math.max(3, [...actors.values()].filter((a) => a.kind === 'main' && !a.gone).length), layers = [];
-  for (let i = 0; i < n; i++) layers.push([desk(i).y + 0.5, () => drawDesk(i, now)]);
-  layers.push([L.back + 0.5, () => drawCounter()], [L.front - 1, () => drawLounge(now)]);
+  const layers = [];
+  for (let i = 0; i < n; i++) {
+    const d = desk(i), who = [...actors.values()].find((a) => a.kind === 'main' && a.desk === i && !a.gone), st = who ? sessions.get(who.sid)?.status : null;
+    layers.push([d.y + 0.5, () => { if (drawDesk(g, L, i, d.x, d.y, st, now, reduceMotion)) env.screens.push({ x: d.x + 2, y: d.y - 27, wait: st === 'wait' }); }]);
+  }
+  layers.push([L.back + 0.5, () => drawCounter(g, L, now, reduceMotion)]);
   for (const a of actors.values()) layers.push([a.y, () => drawActor(a)]);
   for (const [, f] of layers.sort((p, q) => p[0] - q[0])) f();
   for (const p of parts) { g.fillStyle = p.c; g.globalAlpha = Math.min(1, p.life * 2); g.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s); }
   g.globalAlpha = 1;
+  drawLight(g, L, env);
   drawLabels(now);
 }
 
@@ -427,33 +400,60 @@ function pick(a) {
   if (!a || a.kind === 'barista' || a.kind === 'guest') { if (a) { say(a, tr(a.kind === 'barista' ? 'ui.cafe.baristaHi' : 'ui.cafe.guestHi'), '', 3); hop(a, 110); } return; }
   picked = a.key; paintCard(true); hop(a, 100);
 }
+// what the session's AI last wrote to you (its transcript's last answer), fetched when the card opens and again while it
+// stays open; the demo keeps its own
+const replies = new Map();   // session id -> { text, at }
+let doll = null;             // the portrait being animated
+const plain = (md) => String(md || '').replace(/```[\s\S]*?```/g, ' ').replace(/`([^`]+)`/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/^#+\s*/gm, '').replace(/^\s*[-*]\s+/gm, '• ').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\s+/g, ' ').trim();
+async function loadReply(sid) {
+  const was = replies.get(sid); if (was && Date.now() - was.at < 8000) return;
+  replies.set(sid, { text: was?.text || '', at: Date.now() });
+  let items = [];
+  if (DEMO) items = demoLog.get(sid) || [];
+  else {
+    try { const r = await fetch(`/api/log?id=${encodeURIComponent(sid)}${TOKEN ? `&k=${encodeURIComponent(TOKEN)}` : ''}`); items = (await r.json()).items || []; } catch { return; }
+  }
+  const last = [...items].reverse().find((x) => x.role === 'claude' && x.text);
+  const text = last ? short(plain(last.text), 420) : '';
+  if (text !== (was?.text || '')) { replies.set(sid, { text, at: Date.now() }); if (actors.get(picked)?.sid === sid) paintCard(); }
+}
 function paintCard(fresh = false) {
   const a = actors.get(picked); if (!a) { closeCard(); return; }
   const s = sessions.get(a.sid), sub = a.kind === 'sub', cast = sub ? null : art.cast[a.sprite];
   cardEl.hidden = false; cardEl.dataset.kind = sub ? 'sub' : s?.status || 'rest';
   const pic = cardEl.querySelector('.cafe-portrait');
   if (fresh) {
-    pic.replaceChildren();
-    if (cast) { const im = el('img'); im.src = `${ART}/${cast.src}`; im.alt = ''; pic.append(im); pic.dataset.kind = 'art'; }
-    else { const c = document.createElement('canvas'), sp = art.sprites[a.sprite], ims = sheet(a.sprite); c.width = sp.cw; c.height = sp.ch; if (ims) c.getContext('2d').drawImage(ims, 0, 0, sp.cw, sp.ch, 0, 0, sp.cw, sp.ch); pic.append(c); pic.dataset.kind = 'pixel'; }
+    doll?.stop(); doll = null; pic.replaceChildren();
+    if (cast) {
+      const im = new Image(); im.src = `${ART}/${cast.src}`;
+      const c = document.createElement('canvas'); pic.append(c); pic.dataset.kind = 'art';
+      doll = puppet(c, im, cast.head, reduceMotion);
+    } else { const c = document.createElement('canvas'), sp = art.sprites[a.sprite], ims = sheet(a.sprite); c.width = sp.cw; c.height = sp.ch; if (ims) c.getContext('2d').drawImage(ims, 0, 0, sp.cw, sp.ch, 0, 0, sp.cw, sp.ch); pic.append(c); pic.dataset.kind = 'pixel'; }
     pic.classList.remove('is-in'); void pic.offsetWidth; pic.classList.add('is-in');
+    if (s && !sub) loadReply(s.id);
   }
   const wk = sub ? subs.get(a.key.slice(4)) : workers.get(a.sid), said = wk?.lastSay;
   cardEl.querySelector('.cafe-name').textContent = sub ? a.name || tr('ui.cafe.helper') : nameOf(s);
   cardEl.querySelector('.cafe-role').textContent = sub ? tr('ui.cafe.helperOf', { name: nameOf(s) }) : `${cast?.name || a.sprite} · ${tr(`ui.cafe.status.${s?.status || 'rest'}`)}`;
-  const ic = cardEl.querySelector('.cafe-ico'); ic.replaceChildren(icon(TYPE_ICON[said?.type] || 'sparkle'));
-  const text = said?.text || tr('ui.cafe.quiet'), t = cardEl.querySelector('.cafe-text');
+  // what they are doing now, in a line; what their AI last said to you, as the dialogue
+  const doing = sub ? said?.text : s?.status === 'wait' ? tr('ui.cafe.waiting') : said?.text || (s && doingOf(s).text) || '';
+  const dEl = cardEl.querySelector('.cafe-doing'); dEl.hidden = !doing;
+  dEl.replaceChildren(icon(TYPE_ICON[said?.type] || (s?.status === 'rest' ? 'coffee' : 'sparkle')), document.createTextNode(doing || ''));
+  const reply = sub ? '' : replies.get(a.sid)?.text || '';
+  const text = reply || (sub ? said?.text : '') || (s ? doingOf(s).text : '') || tr('ui.cafe.quiet'), t = cardEl.querySelector('.cafe-text');
   if (t.dataset.full !== text) { t.dataset.full = text; t.textContent = ''; t.dataset.at = String(performance.now()); }
-  const n = reduceMotion ? text.length : Math.min(text.length, Math.floor((performance.now() - Number(t.dataset.at)) / 22));
-  t.textContent = text.slice(0, n); if (n < text.length) requestAnimationFrame(() => picked === a.key && paintCard(false));
+  const n = reduceMotion ? text.length : Math.min(text.length, Math.floor((performance.now() - Number(t.dataset.at)) / 18));
+  t.textContent = text.slice(0, n); doll?.talk(n < text.length);
+  if (n < text.length) requestAnimationFrame(() => picked === a.key && paintCard(false));
   cardEl.querySelector('.cafe-task').textContent = !sub && s?.lastPrompt ? `「${short(s.lastPrompt, 140)}」` : '';
   const todo = cardEl.querySelector('.cafe-todo'); const items = sub ? [] : (s?.todos || []).slice(0, 5);
   const tkey = items.map((x) => x.status + x.text).join('|');
-  if (todo.dataset.key !== tkey) { todo.dataset.key = tkey; todo.replaceChildren(...items.map((x) => { const li = el('li', `is-${x.status}`, x.text); return li; })); }
+  if (todo.dataset.key !== tkey) { todo.dataset.key = tkey; todo.replaceChildren(...items.map((x) => el('li', `is-${x.status}`, x.text))); }
   cardEl.querySelector('[data-cafe="approve"]').hidden = sub || s?.status !== 'wait';
   cardEl.querySelector('[data-cafe="swap"]').hidden = sub;
+  if (s && !sub && !fresh) loadReply(s.id);   // (at most every 8 seconds)
 }
-function closeCard() { picked = null; cardEl.hidden = true; }
+function closeCard() { picked = null; cardEl.hidden = true; doll?.stop(); doll = null; }
 function swapRole(a) {
   const s = sessions.get(a?.sid); if (!s || a.kind !== 'main') return;
   const have = CAST.filter((c) => art.sprites[c]), i = have.indexOf(roleOf(s));
@@ -515,6 +515,7 @@ async function loadArt() {
 }
 
 export function setup() {
+  roomHooks({ steam: (x, y) => steam(x, y, 1) });
   try { castOf = JSON.parse(localStorage.getItem(CAST_KEY) || '{}') || {}; const v = localStorage.getItem(PLACE_KEY); if (PLACES.includes(v)) view = v; } catch { /* storage blocked */ }
   document.body.classList.add('is-cafe');
   root = el('section', 'cafe'); root.setAttribute('aria-label', tr('ui.cafe.label'));
@@ -533,7 +534,8 @@ export function setup() {
       <div class="cafe-box">
         <div class="cafe-plate"><b class="cafe-name"></b><small class="cafe-role"></small></div>
         <button type="button" class="cafe-x" data-cafe="close" aria-label="${tr('ui.cafe.close')}"></button>
-        <div class="cafe-line"><span class="cafe-ico"></span><p class="cafe-text"></p></div>
+        <p class="cafe-doing" hidden></p>
+        <p class="cafe-text"></p>
         <p class="cafe-task"></p>
         <ul class="cafe-todo"></ul>
         <div class="cafe-acts">

@@ -25,13 +25,15 @@
 
 /* a click on someone: their portrait and what their AI is doing */
 .cafe-card { position: absolute; inset: auto 0 0 0; z-index: 6; height: 100%; pointer-events: none; }
-.cafe-portrait { position: absolute; left: max(0px, 4cqw); bottom: 0; height: 92%; aspect-ratio: 3 / 5; display: flex; align-items: flex-end; justify-content: center; opacity: 0; transform: translateX(-30px); pointer-events: none; }
+.cafe-portrait { position: absolute; left: max(0px, 3cqw); bottom: 0; height: 88%; width: 46%; display: flex; align-items: flex-end; justify-content: flex-start; opacity: 0; transform: translateX(-30px); pointer-events: none;
+  -webkit-mask-image: linear-gradient(to top, transparent 0, #000 16%); mask-image: linear-gradient(to top, transparent 0, #000 16%); }
 .cafe-portrait.is-in { animation: cafe-in .45s cubic-bezier(.2, .8, .2, 1) forwards; }
 @keyframes cafe-in { to { opacity: 1; transform: none; } }
-.cafe-portrait img { max-height: 100%; max-width: 100%; object-fit: contain; object-position: bottom; filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .5)); }
-.cafe-portrait canvas { height: 46%; image-rendering: pixelated; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .5)); }
-.cafe-box { position: absolute; left: 50%; bottom: 4%; transform: translateX(-42%); width: min(760px, calc(100% - 40px)); box-sizing: border-box; padding: 30px 26px 16px; pointer-events: auto; isolation: isolate; animation: cafe-up .3s ease; }
-@keyframes cafe-up { from { opacity: 0; transform: translate(-42%, 14px); } }
+.cafe-portrait[data-kind="art"] canvas { display: block; filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .5)); }
+.cafe-portrait[data-kind="pixel"] canvas { height: 46%; image-rendering: pixelated; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .5)); animation: cafe-bob 1.6s ease-in-out infinite alternate; }
+@keyframes cafe-bob { to { transform: translateY(-2%); } }
+.cafe-box { position: absolute; left: 50%; bottom: 4%; transform: translateX(-30%); width: min(720px, calc(100% - 40px)); box-sizing: border-box; padding: 30px 26px 16px; pointer-events: auto; isolation: isolate; animation: cafe-up .3s ease; }
+@keyframes cafe-up { from { opacity: 0; transform: translate(-30%, 14px); } }
 .cafe-box::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(to bottom, rgba(18, 12, 26, .86), rgba(18, 12, 26, .95)); border-top: 1px solid rgba(255, 255, 255, .2); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%); }
 .cafe-box::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(to right, var(--pink), transparent 80%); }
 .cafe-plate { position: absolute; left: 14px; top: 0; transform: translateY(-58%); display: flex; align-items: baseline; gap: 10px; padding: 7px 34px 7px 16px; background: linear-gradient(100deg, var(--pink), var(--pink-2)); clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 0 100%); max-width: calc(100% - 60px); }
@@ -41,18 +43,18 @@
 .cafe-role { font: 700 .76rem/1 var(--font); opacity: .92; white-space: nowrap; }
 .cafe-x { all: unset; position: absolute; right: 10px; top: 8px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: rgba(255, 255, 255, .1); }
 .cafe-x:hover { background: rgba(255, 255, 255, .22); }
-.cafe-line { display: flex; gap: 10px; align-items: flex-start; }
-.cafe-ico { flex: none; width: 22px; height: 22px; margin-top: 3px; border-radius: 6px; display: grid; place-items: center; background: rgba(255, 255, 255, .14); }
-.cafe-ico .ic { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.cafe-text { margin: 0; font: 500 1.08rem/1.55 var(--font); min-height: 1.55em; overflow-wrap: anywhere; }
-.cafe-task { margin: 8px 0 0 32px; font: 500 .82rem/1.45 var(--font); color: rgba(255, 255, 255, .62); }
+.cafe-doing { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 8px; padding: 4px 10px; border-radius: 99px; background: rgba(255, 255, 255, .1); font: 600 .8rem/1.3 var(--font); color: rgba(255, 255, 255, .85); max-width: 100%; }
+.cafe-doing[hidden] { display: none; }
+.cafe-doing .ic { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.cafe-text { margin: 0; font: 500 1.06rem/1.6 var(--font); min-height: 1.6em; max-height: 9.6em; overflow-y: auto; overflow-wrap: anywhere; overscroll-behavior: contain; }
+.cafe-task { margin: 8px 0 0; font: 500 .82rem/1.45 var(--font); color: rgba(255, 255, 255, .62); }
 .cafe-task:empty, .cafe-todo:empty { display: none; }
-.cafe-todo { margin: 8px 0 0 32px; padding: 0; list-style: none; display: grid; gap: 3px; font: 500 .8rem/1.35 var(--font); color: rgba(255, 255, 255, .78); }
+.cafe-todo { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font: 500 .8rem/1.35 var(--font); color: rgba(255, 255, 255, .78); }
 .cafe-todo li::before { content: '○ '; color: #9AA4B2; }
 .cafe-todo li.is-doing::before { content: '▶ '; color: #3DDC84; }
 .cafe-todo li.is-done { opacity: .55; text-decoration: line-through; }
 .cafe-todo li.is-done::before { content: '✓ '; color: #3DDC84; }
-.cafe-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0 32px; }
+.cafe-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
 .cafe-acts button { all: unset; padding: 8px 16px; cursor: pointer; font: 700 .86rem/1.2 var(--font); background: rgba(255, 255, 255, .1); border: 1.5px solid rgba(255, 255, 255, .55); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
 .cafe-acts button:hover, .cafe-acts button:focus-visible { background: rgba(255, 255, 255, .22); }
 .cafe-acts button.is-main { background: linear-gradient(100deg, #E08A00, var(--amber)); color: #241500; border-color: #fff; }
