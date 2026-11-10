@@ -106,7 +106,7 @@ export default {
   },
   cafe: {
     label: 'Văn phòng Claude Café, nhìn ngang',
-    viewTitle: 'Đổi cảnh ngoài cửa sổ', log: 'Nhật ký', fullscreen: 'Toàn màn hình', close: 'Đóng',
+    viewTitle: 'Đổi khung cảnh', log: 'Nhật ký', fullscreen: 'Toàn màn hình', close: 'Đóng',
     approve: 'Duyệt ngay', open: 'Mở phiên', swap: 'Đổi nhân vật',
     helper: 'Trợ lý', helperOf: 'trợ lý của {name}',
     hello: 'Chào cả nhà! Mình lo phần {proj} ✨', waiting: 'Chờ bạn duyệt nè!', coffee: 'Cà phê đây ☕',
@@ -118,7 +118,7 @@ export default {
     noArtTitle: 'Chưa có hình nhân vật',
     noArt: 'Nhân vật, chân dung và cảnh lấy từ bản game của bạn trên máy này (không đi kèm mã nguồn). Chạy lệnh sau trong thư mục agent-office rồi tải lại trang:',
     gameFolder: 'thư mục game',
-    place: { street: 'Phố đêm', city: 'Khu đông', corner: 'Góc phố', church: 'Phố nhà thờ', deck: 'Đài quan sát', office: 'Văn phòng', cafe: 'Quán bên kia', room: 'Phòng riêng', hall: 'Nhà kho' },
+    place: { cafe: 'Quán cà phê', office: 'Văn phòng', street: 'Phố chính', city: 'Khu đông', corner: 'Góc phố', church: 'Phố nhà thờ', deck: 'Đài quan sát', room: 'Phòng riêng', hall: 'Hội trường' },
   },
   firstPersonHud: {
     title: 'Đang hoá thân',

@@ -23,3 +23,6 @@ playwright-report/
 
 # the VN view's art, built from your own copy of the game by scripts/vn-assets.py: never committed
 /public/assets/vn/
+
+# Python bytecode (scripts/vn-assets.py imports scripts/vn_live2d.py)
+__pycache__/

@@ -4,6 +4,9 @@
 
 The art belongs to its studio: it is read from your own copy and written to public/assets/vn/, which git ignores. Do
 not commit or publish it. Only the standing portraits, the in-game pixel characters' everyday animations and the backgrounds are taken.
+The standing art's Live2D models are converted for the web too (scripts/vn_live2d.py), and Live2D's Cubism Core for
+Web, the runtime that plays them, is fetched from Live2D's own site into the same folder (Live2D's licence: it is not
+part of this repository either).
 Needs: pip install UnityPy pillow
 """
 import json
@@ -11,9 +14,13 @@ import os
 import re
 import struct
 import sys
+import urllib.request
 
 import UnityPy
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import vn_live2d  # noqa: E402
 
 if len(sys.argv) < 2:
     sys.exit(__doc__)
@@ -66,10 +73,18 @@ MOVES = ['Idle', 'Walk', 'Run', 'TakeOff', 'Rise', 'Fall', 'Land', 'GroundHurt',
 want = {n for n, *_ in CAST.values()} | {n for n, _ in SHADOWS.values()} | {f for p in PLACES.values() for f in p.values()}
 found = {}   # name -> PIL image
 moves = {}   # (sprite id, move) -> bundle file
+l2d = {}     # cast id -> its Live2D model's bundle file
+L2D_NAME = {cid: src.replace('LevelCharacter_', '') for cid, (src, *_rest) in CAST.items()}
 print('reading the game data (about a minute)...')
 for f in sorted(os.listdir(BUNDLES)):
     env = UnityPy.load(os.path.join(BUNDLES, f))
     for path, obj in env.container.items():
+        lm = re.search(r'/Live2D/Battle/Intro/(\w+)Live2D\.prefab$', path)
+        if lm:
+            for cid, game in L2D_NAME.items():
+                if game == lm.group(1):
+                    l2d[cid] = f
+            continue
         a = re.search(r'/Smash/Character/\w+/(\w+)/AnimationInfo/.*/\1_(\w+)_AnimationInfo\.asset$', path)
         if a and a.group(2) in MOVES:
             for sid, game in SPRITES.items():
@@ -201,6 +216,19 @@ for sid in SPRITES:
     sheet.save(os.path.join(OUT, 'sprites', f'{sid}.png'), optimize=True)
     manifest['sprites'][sid] = {'src': f'sprites/{sid}.png', 'cw': cw, 'ch': ch, 'cols': cols, 'px': int(left) + 1, 'py': int(up) + 1, 'anims': anims}
 
+# the standing art as Live2D, and the runtime that plays it
+manifest['live2d'] = {}
+for cid, f in sorted(l2d.items()):
+    print('live2d', cid)
+    if vn_live2d.export(os.path.join(BUNDLES, f), os.path.join(OUT, 'live2d', cid)):
+        manifest['live2d'][cid] = f'live2d/{cid}/model.model3.json'
+CORE = os.path.join(OUT, 'live2d', 'live2dcubismcore.min.js')
+if manifest['live2d'] and not os.path.exists(CORE):
+    try:
+        urllib.request.urlretrieve('https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js', CORE)
+    except Exception as err:   # (offline: the café shows the still portraits instead)
+        print('could not fetch the Cubism Core:', err)
+
 with open(os.path.join(OUT, 'manifest.json'), 'w', encoding='utf-8') as fh:
     json.dump(manifest, fh, indent=1)
-print(f"wrote {len(manifest['cast'])} portraits, {len(manifest['sprites'])} pixel characters, {len(manifest['shadows'])} silhouettes, {len(manifest['places'])} places to {os.path.abspath(OUT)}")
+print(f"wrote {len(manifest['cast'])} portraits, {len(manifest['live2d'])} Live2D models, {len(manifest['sprites'])} pixel characters, {len(manifest['shadows'])} silhouettes, {len(manifest['places'])} places to {os.path.abspath(OUT)}")

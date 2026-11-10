@@ -106,7 +106,7 @@ export default {
   },
   cafe: {
     label: 'The office as Claude Café, side on',
-    viewTitle: 'Change the view out of the window', log: 'Backlog', fullscreen: 'Full screen', close: 'Close',
+    viewTitle: 'Change the scene', log: 'Backlog', fullscreen: 'Full screen', close: 'Close',
     approve: 'Approve now', open: 'Open the session', swap: 'Another character',
     helper: 'Helper', helperOf: "{name}'s helper",
     hello: "Hi all! I'm on {proj} ✨", waiting: 'Waiting for you!', coffee: 'Coffee up ☕',
@@ -118,7 +118,7 @@ export default {
     noArtTitle: 'No character art yet',
     noArt: 'The characters, portraits and scenes come from your own copy of the game on this computer (they are not part of the source). Run this in the agent-office folder, then reload:',
     gameFolder: 'game folder',
-    place: { street: 'Night street', city: 'East side', corner: 'Street corner', church: 'Church street', deck: 'Observation deck', office: 'Office', cafe: 'Across the road', room: 'Bedroom', hall: 'Warehouse' },
+    place: { cafe: 'Café', office: 'Office', street: 'Main street', city: 'East side', corner: 'Street corner', church: 'Church street', deck: 'Observation deck', room: 'Bedroom', hall: 'Hall' },
   },
   firstPersonHud: {
     title: 'Walking the office',

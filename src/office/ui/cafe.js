@@ -17,6 +17,7 @@ import { TYPE_ICON, icon } from './icons.js';
 import { openSession } from './session-drawer.js';
 import { doingOf } from './activity.js';
 import { puppet } from './puppet.js';
+import { live2d } from './live2d.js';
 import { drawCounter, drawDesk, drawLight, drawLive, drawStill, roomHooks } from './cafe-room.js';
 import { TOKEN } from '../net/live.js';
 import { DEMO, demoLog } from '../demo/demo.js';
@@ -26,23 +27,23 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 const ART = `${BASE}/assets/vn`;
 const CAST = ['mio', 'lilith', 'shigure', 'xao', 'mango', 'chika', 'police', 'mercenary', 'sparkle', 'believer'];   // who a newcomer plays, by preference
 const GUESTS = ['thug', 'gangster', 'mafia', 'police', 'sparkle', 'believer', 'mercenary'];
-const PLACES = ['street', 'city', 'corner', 'church', 'deck', 'office', 'cafe', 'room', 'hall'];   // what the window looks out on
+const PLACES = ['cafe', 'office', 'street', 'city', 'corner', 'church', 'deck', 'room', 'hall'];   // the scenes (the game's paintings)
 const CHEER = new Set(['commit', 'push', 'release', 'cigreen', 'testok', 'deploy']);
 const OUCH = new Set(['fail', 'testfail', 'cired']);
 const WALK = 34, RUN = 78, GRAV = 420;   // art pixels a second (and a second squared)
-const CAST_KEY = 'office-cafe-cast', PLACE_KEY = 'office-cafe-view', LOG_MAX = 120;
+const CAST_KEY = 'office-cafe-cast', PLACE_KEY = 'office-cafe-scene', LOG_MAX = 120;
 
 export const cafe = { on: true };
 let root, cv, g, cardEl, logEl, logList, placeMenu, signEl, noArtEl;
 let art = null, artTried = false;
 const sheets = new Map();          // sprite id -> Image
-let castOf = {}, view = 'street';
+let castOf = {}, view = 'cafe';
 const actors = new Map();          // key -> actor
 const seen = new Map();            // worker key -> last line's signature
 const log = [];
 const parts = [];                  // particles: confetti, steam, dust
 let S = 3, W = 0, H = 0, w = 0, h = 0, dpr = 1, lastT = 0, nextGuest = 20, hover = null, picked = null, firstLook = true;
-let winCache = { key: '', c: null }, bgImg = null, bgUrl = '';
+let bgImg = null, bgUrl = '';
 const L = {};                      // this frame's layout (art pixels)
 
 /* ---------- small helpers ---------- */
@@ -169,6 +170,7 @@ function react(a, line) {
   if (!a) return;
   say(a, short(line.text, 46), line.kind, line.kind === 'wait' ? 8 : 6);
   if (reduceMotion || a.z > 0) return;
+  if (picked === a.key && (CHEER.has(line.type) || OUCH.has(line.type))) doll?.mood?.(CHEER.has(line.type) ? 'happy' : 'hurt');
   if (CHEER.has(line.type)) { play(a, 'Special'); confetti(a.x, a.y - 30); hop(a, 130); }
   else if (OUCH.has(line.type) || line.kind === 'fail') play(a, 'GroundHurt', () => { a.think = 1; });
   else if (a.kind === 'main' && sessions.get(a.sid)?.status === 'work' && Math.random() < 0.4) play(a, 'Attack1');
@@ -249,15 +251,15 @@ function listen() {
 /* ---------- drawing ---------- */
 function layout() {
   const b = cv.getBoundingClientRect(); dpr = Math.min(window.devicePixelRatio || 1, 2);
-  W = b.width; H = b.height; S = Math.max(2, Math.min(5, Math.round(Math.min(H / 230, W / 440)))); w = W / S; h = H / S;
+  W = b.width; H = b.height; S = Math.max(2, Math.min(5, Math.round(Math.min(H / 220, W / 330)))); w = W / S; h = H / S;
   const Wp = Math.round(W * dpr), Hp = Math.round(H * dpr); if (cv.width !== Wp || cv.height !== Hp) { cv.width = Wp; cv.height = Hp; }
-  Object.assign(L, { floor: Math.round(h * 0.7), back: Math.round(h * 0.78), mid: Math.round(h * 0.86), front: Math.round(h * 0.95), bar: Math.round(h * 0.75), door: 18 });
-  L.win0 = Math.round(w * 0.1); L.win1 = Math.round(w * 0.6); L.winTop = Math.round(h * 0.1); L.winBot = Math.round(h * 0.5);
-  L.counter = Math.round(w * 0.7); L.counterW = Math.max(56, Math.round(w * 0.13)); L.sofa = Math.round(w * 0.86); L.wain = L.floor - 34;
-  L.lamps = [L.win0 + 30, (L.win0 + L.win1) / 2, L.win1 - 30, L.counter + L.counterW / 2, L.sofa];
+  // the floor the people walk on, in three lanes; workstations across the left two thirds, the coffee cart on the right
+  Object.assign(L, { floor: Math.round(h * 0.7), back: Math.round(h * 0.8), mid: Math.round(h * 0.87), front: Math.round(h * 0.95), door: -14 });
+  L.win0 = Math.round(w * 0.06); L.win1 = Math.round(w * 0.66);
+  L.counter = Math.round(w * 0.8); L.bar = L.back - 3; L.sofa = Math.round(w * 0.7);
   const n = Math.max(3, [...actors.values()].filter((a) => a.kind === 'main' && !a.gone).length);
-  const room = L.win1 - L.win0 - 30; L.perRow = Math.max(2, Math.min(n, Math.floor(room / 40)));
-  L.deskGap = Math.max(40, Math.min(70, room / L.perRow)); L.desk0 = L.win0 + 24;
+  const room = L.win1 - L.win0 - 30; L.perRow = Math.max(2, Math.min(n, Math.floor(room / 44)));
+  L.deskGap = Math.max(44, Math.min(80, room / L.perRow)); L.desk0 = L.win0 + 24;
 }
 function lightNow() {
   const P = art?.places[view] || {}, hr = officeNow().getHours();
@@ -266,27 +268,21 @@ function lightNow() {
   if (hr >= 16 && P.dusk) return 'dusk';
   return 'day';
 }
-function windowPic(ww, hh) {
+// the scene's painting for the time of day, loading (null until it has)
+function scenePic() {
   const P = art?.places[view] || Object.values(art?.places || {})[0]; if (!P) return null;
   const url = `${ART}/${P[lightNow()] || P.day || Object.values(P)[0]}`;
-  if (url !== bgUrl) { bgUrl = url; bgImg = new Image(); bgImg.src = url; winCache.key = ''; }
-  if (!bgImg.complete || !bgImg.naturalWidth) return null;
-  const key = `${url}|${ww}x${hh}`; if (winCache.key === key) return winCache.c;
-  // the view, pixelated to the room's own pixels
-  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(ww)); c.height = Math.max(1, Math.round(hh));
-  const x = c.getContext('2d'), k = Math.max(c.width / bgImg.width, c.height / bgImg.height);
-  x.imageSmoothingQuality = 'high'; x.drawImage(bgImg, (c.width - bgImg.width * k) / 2, (c.height - bgImg.height * k) * 0.6, bgImg.width * k, bgImg.height * k);
-  winCache = { key, c };
-  return c;
+  if (url !== bgUrl) { bgUrl = url; bgImg = new Image(); bgImg.src = url; }
+  return bgImg.complete && bgImg.naturalWidth ? bgImg : null;
 }
-// the room's still part, drawn into a picture of its own when it changes (size, day or night, the view, the desks)
+// the painting, drawn into a picture of its own when it changes (size, the scene, its light)
 let still = { key: '', c: null };
 function stillRoom(pic, n) {
   const key = `${cv.width}x${cv.height}|${S}|${night}|${bgUrl}|${!!pic}|${n}`;
   if (still.key !== key) {
     const c = still.c || document.createElement('canvas'); c.width = cv.width; c.height = cv.height;
     const x = c.getContext('2d'); x.setTransform(dpr * S, 0, 0, dpr * S, 0, 0); x.imageSmoothingEnabled = false; x.clearRect(0, 0, w, h);
-    drawStill(x, L, { w, h, night, pic });
+    drawStill(x, L, { img: pic, cw: c.width, ch: c.height });
     still = { key, c };
   }
   return still.c;
@@ -371,7 +367,7 @@ export function drawCafe() {
   for (const a of actors.values()) stepActor(a, dt);
   stepParts(dt);
   const n = Math.max(3, [...actors.values()].filter((a) => a.kind === 'main' && !a.gone).length);
-  const pic = windowPic(L.win1 - L.win0, L.winBot - L.winTop), env = { w, h, t: now, night, rain: wx.rain, still: reduceMotion, now: officeNow(), screens: [] };
+  const pic = scenePic(), env = { w, h, t: now, night, rain: wx.rain, still: reduceMotion, now: officeNow(), screens: [] };
   g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(stillRoom(pic, n), 0, 0);
   g.setTransform(dpr * S, 0, 0, dpr * S, 0, 0); g.imageSmoothingEnabled = false;
   drawLive(g, L, env);
@@ -420,11 +416,21 @@ async function loadReply(sid) {
 function paintCard(fresh = false) {
   const a = actors.get(picked); if (!a) { closeCard(); return; }
   const s = sessions.get(a.sid), sub = a.kind === 'sub', cast = sub ? null : art.cast[a.sprite];
-  cardEl.hidden = false; cardEl.dataset.kind = sub ? 'sub' : s?.status || 'rest';
+  cardEl.hidden = false;
+  const kind = sub ? 'sub' : s?.status || 'rest';
+  if (!fresh && cardEl.dataset.kind !== kind) doll?.mood?.(kind);   // (a session that changes state changes face)
+  cardEl.dataset.kind = kind;
   const pic = cardEl.querySelector('.cafe-portrait');
   if (fresh) {
     doll?.stop(); doll = null; pic.replaceChildren();
-    if (cast) {
+    const l2d = !sub && art.live2d?.[a.sprite];
+    if (l2d) {
+      // the game's own Live2D model; the still portrait, gently animated, until it has loaded (or if it cannot)
+      const c = document.createElement('canvas'); pic.append(c); pic.dataset.kind = 'live2d';
+      const mine = a.key, mood = s?.status || 'normal';
+      live2d(c, `${ART}/${l2d}`, { mood }).then((d) => { if (picked === mine && pic.contains(c)) { doll?.stop(); doll = d; } else d.stop(); })
+        .catch((err) => { console.warn('live2d', err); if (picked === mine && pic.contains(c) && cast) { c.remove(); const cc = document.createElement('canvas'); pic.append(cc); pic.dataset.kind = 'art'; const im = new Image(); im.src = `${ART}/${cast.src}`; doll = puppet(cc, im, cast.head, reduceMotion); } });
+    } else if (cast) {
       const im = new Image(); im.src = `${ART}/${cast.src}`;
       const c = document.createElement('canvas'); pic.append(c); pic.dataset.kind = 'art';
       doll = puppet(c, im, cast.head, reduceMotion);
