@@ -1,6 +1,5 @@
 // How events read on screen: actions per event type, verbs, bubble text, streamer mode.
 import { state } from '../core/state.js';
-import { PRO } from '../core/env.js';
 import { cap } from './activity.js';
 import { t as tr } from '../../i18n/index.js';
 
@@ -108,18 +107,12 @@ export function bubbleText(e) {
 }
 
 export function setup() {
-  // On the company floor the director brings each new task to the desk (no trip to the board), and a boss briefs its
-  // subagents at the meeting-room screen.
-  if (PRO) { Object.assign(ACT.prompt, { station: 'desk', anim: 'think', dwell: 2.6 }); Object.assign(ACT.agent, { station: 'brief', anim: 'board' }); }
   STATION_LABEL = translated(['dining', 'board', 'library', 'desk', 'server', 'globe', 'meeting', 'director', 'wc', 'tests', 'post'], 'events.station');
   Object.defineProperties(STATION_LABEL, {
-    coffee: { enumerable: true, get: () => tr(PRO ? 'events.station.dining' : 'events.station.coffee') },
+    coffee: { enumerable: true, get: () => tr('events.station.coffee') },
     brief: { enumerable: true, get: () => tr('events.station.meeting') },
   });
   // Streamer mode: any label that could carry a command, path, prompt or URL becomes a generic phrase.
   state.streamer = false;
-  // Zone names over the office show only while you point at their furniture, unless you ask for them always.
-  state.zonesOn = false;
-  try { state.zonesOn = localStorage.getItem('office-zones') === 'on'; } catch { /* storage blocked */ }
   try { state.streamer = localStorage.getItem('office-stream') === 'on'; } catch { /* storage blocked */ }
 }

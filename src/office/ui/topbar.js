@@ -2,13 +2,11 @@
 import { state } from '../core/state.js';
 import { $, el, replay, small } from '../core/env.js';
 import { dn } from '../people/workers.js';
-import { night, setNight } from '../world/room-update.js';
+import { night, setNight } from '../life/daylight.js';
 import { toast } from './activity.js';
 import { closeSession, drM, drS, openSession } from './session-drawer.js';
 import { closeMac } from './mac-drawer.js';
-import { closePlace, plcState } from '../interact/place-cards.js';
 import { popLook, togglePlan, togglePop } from './settings.js';
-import { exitFp, fp } from '../interact/first-person.js';
 import { closeTimeline } from '../replay/timeline.js';
 import { t as tr } from '../../i18n/index.js';
 import { pushOff, pushOn, pushState, pushTest } from './notify.js';
@@ -226,7 +224,7 @@ export function setup() {
   });
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Escape') return;
-    if (!$('tl').hidden) closeTimeline(); else if (plcState.id) closePlace(); else if (!popLook.hidden) togglePop(false); else if (!$('pop-plan').hidden) togglePlan(false); else if (!$('phone-modal').hidden) $('phone-modal').hidden = true; else if (!drS.hidden) closeSession(); else if (!drM.hidden) closeMac(); else if (fp.on) exitFp();
+    if (!$('tl').hidden) closeTimeline(); else if (!popLook.hidden) togglePop(false); else if (!$('pop-plan').hidden) togglePlan(false); else if (!$('phone-modal').hidden) $('phone-modal').hidden = true; else if (!drS.hidden) closeSession(); else if (!drM.hidden) closeMac();
   });
   $('feed-toggle').addEventListener('click', () => { if (!small.matches) return; const open = $('feed').classList.toggle('feed--open'); $('feed-toggle').setAttribute('aria-expanded', String(open)); });
 }

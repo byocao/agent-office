@@ -1,20 +1,13 @@
-// Settings: four tabs of picture cards instead of a long list. Office (floor plan, scenery, time of day, real weather),
-// Characters (the two looks, drawn live by the office's renderer), Display (graphics, language, what shows on screen)
-// and More (phone, alerts, behaviour). Static markup: src/office/ui/settings.js drives it; ids and data-* stay as the
+// Settings: three tabs. Office (time of day, real weather), Display (language, what shows on screen) and More (phone,
+// alerts, behaviour). Static markup: src/office/ui/settings.js drives it; ids and data-* stay as the
 // office's code expects them.
 import { LANGS } from '@/i18n/index.js';
 import { getT } from '@/i18n/server';
 
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
-const LAYOUTS = ['cozy', 'pro', 'hq'] as const;
-const SCENES = [['city', 'sc-city'], ['country', 'sc-country'], ['beach', 'sc-beach']] as const;
 const TIMES = ['auto', 'day', 'night'] as const;
-const LOOKS = ['toy', 'pixar'] as const;
-const QUALITY = [['auto', 0], ['low', 1], ['medium', 2], ['high', 3]] as const;
 const CITIES = [['hn', 'Hà Nội'], ['hcm', ''], ['dn', 'Đà Nẵng'], ['hue', 'Huế'], ['hp', 'Hải Phòng'], ['ct', 'Cần Thơ'], ['dl', 'Đà Lạt'], ['nt', 'Nha Trang']] as const;
 const TIME_ICON = { auto: 'clock', day: 'sun', night: 'moon' } as const;
 const LOOP_N = [2, 3, 4, 5], LOOP_MIN = [5, 10, 20, 30];   // (the server's choices: server/loops.mjs)
-const FAREWELL_DAYS = [14, 30, 60, 90];   // (server/tenure.mjs)
 
 export default async function SettingsPanel() {
   const t = await getT();
@@ -28,32 +21,13 @@ export default async function SettingsPanel() {
         <button type="button" className="st-close" id="st-close" aria-label={t('common.close')}><span data-icon="x"></span></button>
       </div>
       <div className="st-tabs" role="tablist">
-        {(['office', 'people', 'display', 'more'] as const).map((k, i) => (
+        {(['office', 'display', 'more'] as const).map((k, i) => (
           <button key={k} type="button" role="tab" id={`st-tab-${k}`} aria-controls={`st-panel-${k}`} aria-selected={i === 0 ? 'true' : 'false'} data-st-tab={k}>{t(`settings.tabs.${k}`)}</button>
         ))}
       </div>
 
       <div className="st-body">
         <section className="st-panel" id="st-panel-office" role="tabpanel" aria-labelledby="st-tab-office" data-st-panel="office">
-          <h3>{t('ui.topBar.office')}</h3>
-          <div className="st-cards st-cards--3">
-            {LAYOUTS.map((l) => (
-              <button key={l} type="button" className="scene st-layout" data-layout={l} aria-pressed="false">
-                {/* eslint-disable-next-line @next/next/no-img-element -- a small static picture, no optimisation needed */}
-                <img className="sc-art st-shot" src={`${BASE}/assets/thumbs/layout-${l}.jpg`} alt="" loading="lazy" decoding="async" />
-                <b>{t(`settings.layouts.${l}.name`)}</b><small>{t(`settings.layouts.${l}.sub`)}</small>
-              </button>
-            ))}
-          </div>
-          <p className="pop-note">{t('settings.layoutNote')}</p>
-
-          <h3>{t('ui.topBar.scenery')}</h3>
-          <div className="st-cards st-cards--3">
-            {SCENES.map(([k, art]) => (
-              <button key={k} type="button" className="scene" data-scene={k} aria-pressed="false"><span className={`sc-art ${art}`}></span><b>{t(`ui.topBar.scenes.${k}`)}</b><small>{t(`ui.topBar.scenes.${k}Sub`)}</small></button>
-            ))}
-          </div>
-
           <h3>{t('ui.topBar.time')}</h3>
           <div className="st-cards st-cards--3">
             {TIMES.map((k) => (
@@ -70,34 +44,9 @@ export default async function SettingsPanel() {
             {CITIES.map(([k, name]) => <button key={k} type="button" data-wx={k} aria-pressed="false">{name || t('life.weather.hcm')}</button>)}
           </div>
           <p className="pop-note wx-now" id="wx-now">{t('ui.topBar.weatherHint')}</p>
-          <div className="pop-toggles">{toggle('season', true)}</div>
-        </section>
-
-        <section className="st-panel" id="st-panel-people" role="tabpanel" aria-labelledby="st-tab-people" data-st-panel="people" hidden>
-          <h3>{t('ui.topBar.characters')}</h3>
-          <div className="st-cards st-cards--2">
-            {LOOKS.map((l) => (
-              <button key={l} type="button" className="scene st-look" data-look={l} aria-pressed="false">
-                <span className="sc-art st-portrait" data-portrait={l}><span className="st-spin" aria-hidden="true"></span></span>
-                <b>{t(`ui.topBar.${l}`)}</b><small>{t(`settings.looks.${l}.sub`)}</small>
-              </button>
-            ))}
-          </div>
-          <p className="pop-note">{t('settings.lookNote')}</p>
         </section>
 
         <section className="st-panel" id="st-panel-display" role="tabpanel" aria-labelledby="st-tab-display" data-st-panel="display" hidden>
-          <h3>{t('settings.graphics')}</h3>
-          <div className="st-cards st-cards--4">
-            {QUALITY.map(([q, bars]) => (
-              <button key={q} type="button" className="scene" data-quality={q} aria-pressed={q === 'auto' ? 'true' : 'false'}>
-                <span className="sc-art st-q">{bars ? <span className="q-bars" data-n={bars}><i></i><i></i><i></i></span> : <span data-icon="sparkle"></span>}</span>
-                <b>{t(`settings.q.${q}`)}</b><small>{t(`settings.qSub.${q}`)}</small>
-              </button>
-            ))}
-          </div>
-          <p className="pop-note" id="q-note"></p>
-
           <h3>{t('settings.language')}</h3>
           <div className="st-cards st-cards--2">
             {Object.entries(LANGS).map(([code, l]) => (
@@ -108,7 +57,7 @@ export default async function SettingsPanel() {
           </div>
 
           <h3>{t('ui.topBar.more')}</h3>
-          <div className="pop-toggles">{toggle('zones', false)}{toggle('stream', false)}{toggle('autocam', true)}</div>
+          <div className="pop-toggles">{toggle('stream', false)}</div>
         </section>
 
         <section className="st-panel" id="st-panel-more" role="tabpanel" aria-labelledby="st-tab-more" data-st-panel="more" hidden>
@@ -123,8 +72,7 @@ export default async function SettingsPanel() {
           <div className="pop-toggles">{toggle('coach', true)}</div>
           <p className="pop-note">{t('settings.coachNote')}</p>
           <h3>{t('settings.behaviour')}</h3>
-          <div className="pop-toggles">{toggle('sound', true)}{toggle('perm', true)}{toggle('drill', true)}</div>
-          <div className="pop-acts"><button id="btn-tips" className="tb-btn" type="button"><span data-icon="sparkle"></span><span className="lbl">{t('tips.again')}</span></button></div>
+          <div className="pop-toggles">{toggle('sound', true)}{toggle('perm', true)}</div>
           {/* the stuck-loop breaker (src/office/ui/stuck.js fills it in from the server; hidden in the demo) */}
           <div className="st-loop" id="st-loop" hidden>
             <h3>{t('settings.loop.title')}</h3>
@@ -136,15 +84,7 @@ export default async function SettingsPanel() {
               <div className="seg">{LOOP_MIN.map((n) => <button key={n} type="button" data-loop-min={n} aria-pressed={n === 10 ? 'true' : 'false'}>{t('settings.loop.mins', { n })}</button>)}</div></div>
             <p className="pop-note st-loop-install" id="st-loop-install" hidden>{t('settings.loop.install')}</p>
           </div>
-          {/* farewells for projects gone quiet (src/office/people/farewell.js fills it in from the server; hidden in the demo) */}
-          <div className="st-loop" id="st-farewell" hidden>
-            <h3>{t('settings.farewell.title')}</h3>
-            <div className="pop-toggles"><button type="button" className="tgl" data-fw-tgl="" role="switch" aria-checked="true"><span>{t('settings.farewell.on')}</span><i></i></button></div>
-            <p className="pop-note">{t('settings.farewell.note')}</p>
-            <div className="st-loop-row"><span>{t('settings.farewell.after')}</span>
-              <div className="seg">{FAREWELL_DAYS.map((n) => <button key={n} type="button" data-fw-days={n} aria-pressed={n === 30 ? 'true' : 'false'}>{t('settings.farewell.days', { n })}</button>)}</div></div>
-          </div>
-          {/* the prompt cache's clock: the cups on the desks, and a phone told before a session waiting for you goes cold (src/office/ui/cache-words.js; hidden in the demo) */}
+          {/* the prompt cache's clock: a phone told before a session waiting for you goes cold (src/office/ui/cache-words.js; hidden in the demo) */}
           <div className="st-cache" id="st-cache" hidden>
             <h3>{t('settings.cache.title')}</h3>
             <p className="pop-note">{t('settings.cache.note')}</p>

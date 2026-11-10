@@ -1,21 +1,16 @@
 // Demo mode: fictional projects and a fictional Mac.
 import { state } from '../core/state.js';
 import { $, STATIC, officeNow, rand, replay } from '../core/env.js';
-import { CHAIR_IDLE, chairs } from '../world/desks.js';
-import { sessions, subs, workers } from '../people/workers.js';
+import { removeAgent, sessions, subs, workers } from '../people/workers.js';
 import { chatAct, chatApply, chatLeft, chatLoad } from '../ui/group-chat.js';
-import { setTrophies } from '../life/trophies.js';
-import { setLiftService } from '../life/lift-service.js';
 import { addFeed, queueFeed, queueUi, renderFeed, toast } from '../ui/activity.js';
 import { closeSession, drM } from '../ui/session-drawer.js';
 import { acctLogin, acctMoved, acctSwitched, limitWarned, liveWindows, loadMac, renderLimits, renderMac } from '../ui/mac-drawer.js';
-import { DEMO_TODOS, onTodos } from '../ui/whiteboard.js';
-import { TOKEN, freeDesk, removeSession, setConn, upsertSession } from '../net/live.js';
+import { TOKEN, removeSession, setConn, upsertSession } from '../net/live.js';
 import { onEvent } from '../life/incidents.js';
 import { onPerm, perms, renderPerms, reportPresence } from '../ui/permissions.js';
 import { renderPhone } from '../ui/topbar.js';
 import { summarize } from '../../shared/burn.js';
-import { setTenure } from '../people/farewell.js';
 import { logLine } from './demo-log.js';
 import { t as tr } from '../../i18n/index.js';
 
@@ -192,7 +187,6 @@ const REPLY_KEYS = ['cart', 'speed', 'schedule'];
 const demoReply = (i) => tr(`demo.replies.${REPLY_KEYS[i]}`);
 export function startDemo() {
   $('demo-chip').hidden = false;
-  state.todos = DEMO_TODOS.map((t) => ({ ...t })); onTodos();
   state.stats = { prompts: 0, read: 0, edit: 0, cmd: 0, deploy: 0 };
   demoProjects().forEach((p, i) => {
     const s = { usage: { cost: 0.4 + i * 0.9, ctx: i === 0 ? 168000 : 38000 + i * 21000, ctxMax: 200000, model: 'claude-opus-5-5', out: 0 }, id: `demo-${i}`, pid: 52000 + i, name: p.name, dir: p.dir, link: null, desk: i, status: 'rest', lastPrompt: '', taskStart: 0, counts: { read: 0, edit: 0, cmd: 0, web: 0 }, subs: [], doneSubs: [], last: null, lastAt: Date.now() - (i + 1) * 9 * 60e3, todos: demoChecklist(i) || [] };
@@ -239,9 +233,7 @@ export function applyMsg(d, quiet = false) {
       if (!quiet) chatLoad();   // (the group chat as it is now: after a reconnect, what was missed)
       state.isLocal = !!d.local; state.lanUrl = d.lan || null; state.lanBase = d.lanBase || null; state.phonePin = d.pin || null; state.tsUrl = d.ts || null; state.tsHere = !!d.tsHere; state.phoneApprove = !!d.phoneApprove; state.phoneTasks = !!d.phoneTasks; state.lanFixed = !!d.lanFixed;
       if (d.build) { if (state.build && d.build !== state.build) reloadSoon(); else state.build = d.build; }   // (the office was updated: this page is an older one)
-      state.todos = d.todos || []; onTodos();
-      if (d.trophies) setTrophies(d.trophies);
-      if (d.lift) setLiftService(d.lift);   // (the lift's servicing after the server started: life/lift-service.js)
+      state.todos = d.todos || [];
       state.limits = d.limits || null; state.limitsNote = d.limitsNote || ''; for (const w of liveWindows()) if (w.pct >= 80) limitWarned.add(`${w.key}:${w.resetsAt}:${w.pct >= 95 ? 95 : 80}`); renderLimits();
       $('btn-phone').hidden = false; if ($('btn-phone-top')) $('btn-phone-top').hidden = !state.isLocal;   // (on a phone: its PIN, and what the Mac allows it)
       $('btn-bell').hidden = !('Notification' in window) || !window.isSecureContext;
@@ -256,7 +248,7 @@ export function applyMsg(d, quiet = false) {
   else if (d.k === 'stats') { state.stats = d.stats; if (d.s) upsertSession(d.s, !quiet); }
   else if (d.k === 'perm') onPerm(d.p);
   else if (d.k === 'permDone') { perms.delete(d.id); renderPerms(); }
-  else if (d.k === 'todos') { state.todos = d.todos || []; onTodos(); }
+  else if (d.k === 'todos') state.todos = d.todos || [];
   else if (d.k === 'phone') { state.phoneApprove = !!d.approve; state.phoneTasks = !!d.tasks; for (const c of [...$('perm-stack').children]) c.remove(); renderPerms(); reportPresence(); if (!$('phone-modal').hidden) renderPhone(); }   // (approving and giving work from a phone, switched on the Mac)
   else if (d.k === 'acctlogin') acctLogin(d);   // (adding an account: a step of its sign-in)
   else if (d.k === 'acctswitch') acctSwitched(d);   // (new sessions moved to another account)
@@ -265,14 +257,12 @@ export function applyMsg(d, quiet = false) {
   else if (d.k === 'chatact') { if (!quiet) chatAct(d.what); }   // (open conversations moved over too)
   else if (d.k === 'limits') { state.limits = d.limits || null; state.limitsNote = d.note || ''; renderLimits(); if (!drM.hidden) renderMac(); }
   else if (d.k === 'sysauto') { if (!quiet) { toast(d.message, 8000); loadMac(); } }   // (idle sessions closed on the drawer's timer)
-  else if (d.k === 'trophies') setTrophies(d.t, quiet ? [] : d.earned || []);
-  else if (d.k === 'tenure') setTenure(d);   // (the projects' working lives: a farewell due, one back; people/farewell.js)
   else if (d.k === 'vi') relabel(d.from, d.to);
 }
 // a translation that arrived after its event: swap the words in bubbles, the feed and the session list
 function relabel(from, to) {
   if (!from || !to) return;
-  for (const w of [...workers.values(), ...subs.values()]) if (w.lastSay?.text?.includes(from) && w.bubbleObj.visible) w.say(w.lastSay.type, w.lastSay.text.replace(from, to), w.lastSay.kind);
+  for (const w of [...workers.values(), ...subs.values()]) if (w.lastSay?.text?.includes(from)) w.say(w.lastSay.type, w.lastSay.text.replace(from, to), w.lastSay.kind);
   for (const e of state.feed) { if (e.label === from) e.label = to; if (e.desc === from) e.desc = to; }
   for (const s of sessions.values()) for (const o of [s, ...(s.subs || [])]) { if (o.last?.label === from) o.last.label = to; if (o.desc === from) o.desc = to; }
   queueFeed(); queueUi();
@@ -314,10 +304,7 @@ export function connect() {
   };
 }
 export function dropSessionNow(id) {
-  const s = sessions.get(id); sessions.delete(id); freeDesk(id);
-  const w = workers.get(id);
-  if (w) { workers.delete(id); for (const [aid, sw] of subs) if (sw.parent === w) { subs.delete(aid); sw.remove(); } w.remove(); }
-  if (s && s.desk >= 0) chairs[s.desk].color.set(CHAIR_IDLE);
+  sessions.delete(id); removeAgent(id);
   if (state.selectedId === id) closeSession();
 }
 

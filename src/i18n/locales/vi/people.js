@@ -187,7 +187,7 @@ export default {
     close: ['Ăn bánh xong về làm tiếp nhé!'], bye: ['Bánh ngon quá 🍰', 'Về làm tiếp!'], deploy: ['Lên sóng rồi! 🎉', 'Deploy ngon! 👏', 'Tuyệt! 🚀'],
   },
   busy: ['Đang làm dở, lát nhé 🙏', 'Hửm? Mình đang tập trung chút', 'Sắp xong rồi, đợi tí 👀'],
-  looks: { toy: 'A · Chibi đồ chơi', pixar: 'B · Chibi Pixar' },
+  looks: { toy: 'A · Chibi đồ chơi', pixar: 'B · Chibi Pixar', anime: 'C · Chibi Anime' },
   tea: {
     toast: '🧋 16:00 thứ Sáu: trà chiều ở pantry, có trà sữa với bánh tráng trộn!',
     coming: ['Trà chiều thứ Sáu nào! 🧋', 'Có trà sữa kìa, ra liền!', 'Bánh tráng trộn! Đợi mình với!'],

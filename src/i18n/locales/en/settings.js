@@ -25,6 +25,7 @@ export default {
   looks: {
     toy: { sub: 'Round and glossy, like a vinyl figure' },
     pixar: { sub: 'Big eyes and layered hair, like an animated film' },
+    anime: { sub: 'Glossy anime eyes, ink outlines and cel-shading for the whole office' },
   },
   lookNote: 'Every person in the office changes at once, including you in Walk in mode.',
   qSub: { auto: 'Steps down if slow', low: 'Light, saves battery', medium: 'Balanced', high: 'Sharpest, soft shadows' },

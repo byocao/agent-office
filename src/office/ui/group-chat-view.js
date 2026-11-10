@@ -13,7 +13,6 @@ import { $, STATIC, el } from '../core/env.js';
 import { state } from '../core/state.js';
 import { icon } from './icons.js';
 import { avatar } from './chat-avatars.js';
-import { photoOn } from './photo.js';
 import { dn, sessions } from '../people/workers.js';
 import { openTaskSheet, dictate, shrink } from './task-sheet.js';
 import { openBurn } from './burn.js';
@@ -348,7 +347,7 @@ function groupAvatar(size = 40) {
 // a small card by the button for a new message while the window is shut (like a conversation in the app's list)
 let peekTimer = 0;
 function peek(m) {
-  if (chat.open || m.kind === 'sys' || m.from === 'me' || photoOn()) return;
+  if (chat.open || m.kind === 'sys' || m.from === 'me') return;
   let p = $('zc-peek'); if (!p) { p = el('button', 'zc-peek'); p.id = 'zc-peek'; p.type = 'button'; p.addEventListener('click', () => toggle(true)); document.body.append(p); }
   if (m.kind === 'work') return;   // (a card at work: its answer is the news)
   const txt = m.kind === 'loop' ? loopPeek(m) : m.kind === 'text' ? mask(m.text) : m.kind === 'poll' ? `📊 ${m.poll.q}` : m.kind === 'remind' ? `⏰ ${m.remind.title}` : m.kind === 'photo' ? tr('chat.photo') : tr('chat.sticker');

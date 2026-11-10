@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }) => { await page.addInitScript(() => { try { loc
 test('on a phone: a tab bar, panels as sheets, approvals above the tabs, nothing wider than the screen', { tag: '@phone' }, async ({ page }) => {
   test.setTimeout(300_000);
   const errors = watchErrors(page);
-  await page.goto('/?demo&debug&layout=cozy');   // (the small office: lighter for a headless browser)
+  await page.goto('/?demo&debug');   // (the small office: lighter for a headless browser)
   await expect(page.locator('#rail-list .ri').first()).toBeAttached({ timeout: 60_000 });
   await page.evaluate(() => (window as unknown as { __office: Office }).__office.pauseDemo());
   await expect(page.locator('html')).toHaveClass(/is-phone/);
@@ -83,7 +83,7 @@ test('on a phone held sideways: still the phone layout, the tabs as icons', { ta
   test.setTimeout(120_000);
   const errors = watchErrors(page);
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.goto('/?demo&layout=cozy');
+  await page.goto('/?demo');
   await expect(page.locator('#rail-list .ri').first()).toBeAttached({ timeout: 60_000 });
   await expect(page.locator('html')).toHaveClass(/is-phone/);
   await expect(page.locator('.ph-tabs')).toBeVisible();

@@ -5,7 +5,6 @@ import { dn, sessions } from '../people/workers.js';
 import { queueUi, renderHud, toast } from '../ui/activity.js';
 import { openSession } from '../ui/session-drawer.js';
 import { bellOn } from '../ui/topbar.js';
-import { fp } from '../interact/first-person.js';
 import { sfx } from '../audio/sfx.js';
 import { t as tr } from '../../i18n/index.js';
 
@@ -31,7 +30,7 @@ function nextNeedingYou() {
 export function setup() {
   addEventListener('focus', () => setTimeout(() => { if (document.hasFocus() && unseenDone.size) { unseenDone.clear(); renderHud(); queueUi(); } }, 1500));
   document.addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyN' || e.metaKey || e.ctrlKey || e.altKey || fp.on || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+    if (e.code !== 'KeyN' || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
     nextNeedingYou();
   });
 }

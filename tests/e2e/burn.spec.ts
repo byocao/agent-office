@@ -35,7 +35,7 @@ test.beforeEach(async ({ page }) => { await page.addInitScript(() => { try { loc
 
 test('before any numbers: an honest empty state that says what to do', async ({ page }) => {
   const errors = watchErrors(page);
-  await page.goto('/?burn&layout=cozy');
+  await page.goto('/?burn');
   await expect(page.locator('#dr-burn')).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('#burn-body .bn-empty')).toContainText('No numbers yet');
   await expect(page.locator('#burn-body .bn-empty code')).toHaveText('agent-office install');
@@ -156,7 +156,7 @@ test.describe('on a phone', () => {
 
 test('the demo shows the panel with made-up numbers that add up', async ({ page }) => {
   const errors = watchErrors(page);
-  await page.goto('/?demo&layout=cozy&burn=7d');
+  await page.goto('/?demo&burn=7d');
   const body = page.locator('#burn-body');
   await expect(body.locator('.bn-total')).toBeVisible({ timeout: 60_000 });
   await expect(body.locator('.bn-days .bn-day')).toHaveCount(7);

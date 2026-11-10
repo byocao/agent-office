@@ -3,10 +3,8 @@ import { state } from '../core/state.js';
 import { $, el, fmtBytes, fmtClock, hhmm, nowMs, pad2, reduceMotion, short, small } from '../core/env.js';
 import { STATUS_LABEL, verb } from './event-text.js';
 import { TYPE_ICON, icon } from './icons.js';
-import { BASE_ZOOM } from '../scene/renderer.js';
-import { colorOf, dn, sessions, workers } from '../people/workers.js';
+import { colorOf, dn, sessions } from '../people/workers.js';
 import { cap, feedRow, fmtTok, fmtUsd, openFromRow, queueUi, toast } from './activity.js';
-import { goView, setView } from './camera-bar.js';
 import { closeMac, doAction, loadMac, macSnap } from './mac-drawer.js';
 import { TOKEN } from '../net/live.js';
 import { unseenDone } from '../life/your-turn.js';
@@ -27,10 +25,8 @@ export function openSession(id, opts = {}) {
   if (!sessions.has(id)) return;
   closeMac();
   const same = state.selectedId === id && !drS.hidden;
-  state.selectedId = id; drS.hidden = false; setView(null);
-  const waver = workers.get(id); if (waver && !same) waver.waveUntil = state.sim + 1.8;
+  state.selectedId = id; drS.hidden = false;
   if (small.matches) $('feed').classList.remove('feed--open');
-  state.zoomGoal = (small.matches ? 2.1 : 1.6) * BASE_ZOOM;
   if (!same) { logItems = []; subItems = []; }
   state.subView = opts.agent || null;
   setTab(opts.tab || 'chat');
@@ -38,7 +34,7 @@ export function openSession(id, opts = {}) {
   loadLog(true);
   queueUi();
 }
-export function closeSession() { state.selectedId = null; state.subView = null; drS.hidden = true; goView('home'); queueUi(); }
+export function closeSession() { state.selectedId = null; state.subView = null; drS.hidden = true; queueUi(); }
 export function renderSessionHead() {
   const s = sessions.get(state.selectedId); if (!s) return;
   $('ds-dot').style.background = colorOf(s);

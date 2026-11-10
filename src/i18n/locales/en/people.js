@@ -201,7 +201,7 @@ export default {
     close: ['Cake, then back to work!'], bye: ['That was good cake 🍰', 'Back to it!'], deploy: ['Shipped! 🎉', "It's live! 👏", 'Nice! 🚀'],
   },
   busy: ['In the middle of something, one sec 🙏', 'Hm? Focusing right now', 'Almost done, hang on 👀'],
-  looks: { toy: 'A · Toy chibi', pixar: 'B · Pixar chibi' },
+  looks: { toy: 'A · Toy chibi', pixar: 'B · Pixar chibi', anime: 'C · Anime chibi' },
   tea: {
     toast: '🧋 Friday 16:00: tea in the pantry, milk tea and bánh tráng trộn!',
     coming: ['Friday tea! 🧋', 'Milk tea? On my way!', 'Bánh tráng trộn! Wait for me!'],

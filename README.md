@@ -2,8 +2,10 @@
 
 English · [Tiếng Việt](README.vi.md)
 
-A 3D office for your Claude Code sessions. Each session is a character at a desk: it walks to the library to read
-files, types while it edits, goes to the server room to run commands, and launches a rocket when you deploy.
+A pixel café for your Claude Code sessions, seen side on. Each session is a pixel character with a desk by the window:
+it types while it works, hops when it waits for you, celebrates a commit and wanders to the counter when it rests.
+Click someone for their portrait and what their AI is doing. The characters come from your own copy of a game
+(`scripts/vn-assets.py`), never from this repository.
 
 ![Agent Office: the company floor with sessions at work](docs/media/demo.gif)
 
@@ -75,7 +77,7 @@ Logs are in `data/server.log`. `doctor` also prints how to restart the backgroun
 - Three floor plans, two character styles, city / countryside / beach backdrops, real weather and day and night.
 - A living Vietnamese city outside, a team group chat, games, pool and karaoke for resting sessions.
 - Walk around in first person (WASD, E to interact), photo mode (P) and 15-second clips.
-- English and Vietnamese (Settings → Display). List mode turns off 3D to save battery.
+- English and Vietnamese (Settings → Display).
 
 ## Privacy
 
@@ -115,7 +117,7 @@ npm run build && npm run test:e2e              # end-to-end tests
 | --- | --- | --- |
 | Server | `server/` | Node.js |
 | Web page | `app/`, `src/components/` | Next.js |
-| 3D office | `src/office/` | three.js |
+| The café | `src/office/` | plain canvas |
 | Text on screen | `src/i18n/locales/` | one folder per language |
 
 More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -124,7 +126,7 @@ More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [CONTRIBUTING.md](CONTR
 
 - Ideas from agents-at-work, cubicle-crew (MIT, dangerous-command patterns) and cc-reaper (Apache-2.0, RAM and CPU
   rules).
-- [three.js](https://threejs.org) and qrcode.js (MIT); Be Vietnam Pro and JetBrains Mono fonts (SIL OFL).
+- qrcode.js (MIT); Be Vietnam Pro and JetBrains Mono fonts (SIL OFL).
 - [Simple Icons](https://simpleicons.org) and [Kenney Car Kit](https://kenney.nl/assets/car-kit) (CC0);
   weather from [Open-Meteo](https://open-meteo.com).
 - Shop and brand names (Circle K, GS25, 7-Eleven, WinMart, Grab, Xanh SM, Shopee, Mixue, Highlands Coffee and others)

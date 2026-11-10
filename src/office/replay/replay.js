@@ -2,12 +2,10 @@
 import { state } from '../core/state.js';
 import { $, fmtClock, hhmm, replay, officeNow } from '../core/env.js';
 import { icon } from '../ui/icons.js';
-import { leaving, leavingIds, sessions } from '../people/workers.js';
-import { director } from '../people/director.js';
+import { leavingIds, sessions } from '../people/workers.js';
 import { queueUi, renderFeed, toast } from '../ui/activity.js';
 import { closeSession } from '../ui/session-drawer.js';
 import { closeMac } from '../ui/mac-drawer.js';
-import { fp } from '../interact/first-person.js';
 import { TOKEN } from '../net/live.js';
 import { unseenDone } from '../life/your-turn.js';
 import { fails } from '../life/incidents.js';
@@ -59,17 +57,14 @@ export async function startReplay(range = replay.range) {
 }
 function resetScene() {
   for (const id of [...sessions.keys()]) dropSessionNow(id);
-  if (director) director.reset();
-  for (const w of [...leaving]) w.remove();
-  leaving.clear(); leavingIds.clear();
+  leavingIds.clear();
   state.feed = []; state.stats = {}; fails.length = 0; unseenDone.clear(); state.incidentUntil = 0; renderFeed(); queueUi();
 }
 export function seekTo(t) {
   if (t < replay.clock || replay.i === 0) { resetScene(); replay.i = 0; }
   replay.clock = t;
   while (replay.i < replay.items.length && replay.items[replay.i].t <= t) applyMsg(replay.items[replay.i++].m, true);
-  for (const w of [...leaving]) w.remove();
-  leaving.clear(); leavingIds.clear();
+  leavingIds.clear();
   renderFeed(); queueUi(); renderReplayTime(true);
 }
 export function replayTick() {
@@ -155,7 +150,7 @@ export function setup() {
   $('rp-range').addEventListener('click', (e) => { const b = e.target.closest('[data-range]'); if (b) startReplay(b.dataset.range); });
   $('rp-speed').addEventListener('click', (e) => { const b = e.target.closest('[data-speed]'); if (b) { replay.speed = Number(b.dataset.speed); renderReplay(); } });
   document.addEventListener('keydown', (e) => {
-    if (!replay.on || e.code !== 'Space' || fp.on || e.target.closest?.('input, textarea, select, button, [contenteditable="true"]')) return;
+    if (!replay.on || e.code !== 'Space' || e.target.closest?.('input, textarea, select, button, [contenteditable="true"]')) return;
     e.preventDefault(); $('rp-play').click();
   });
   addEventListener('resize', () => { if (replay.on) drawHeat(); });

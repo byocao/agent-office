@@ -2,8 +2,9 @@
 
 [English](README.md) · Tiếng Việt
 
-Văn phòng 3D cho các phiên Claude Code. Mỗi phiên là một nhân vật ngồi bàn: đọc file thì đi tới thư viện, sửa code thì
-ngồi gõ, chạy lệnh thì ra phòng máy, deploy thì phóng tên lửa.
+Quán cà phê pixel nhìn ngang cho các phiên Claude Code. Mỗi phiên là một nhân vật pixel có bàn bên cửa sổ: đang làm thì
+gõ phím, chờ duyệt thì nhảy tưng tưng, commit thì ăn mừng, nghỉ thì ra quầy. Bấm vào ai để xem chân dung và AI đang làm
+gì. Nhân vật lấy từ bản game của chính bạn (`scripts/vn-assets.py`), không nằm trong repo này.
 
 ![Agent Office: tầng công ty với các phiên đang làm việc](docs/media/demo.gif)
 
@@ -77,7 +78,6 @@ Log nằm ở `data/server.log`. `doctor` cũng in lệnh khởi động lại d
 - Ba kiểu văn phòng, hai kiểu nhân vật, cảnh thành phố / đồng quê / biển, thời tiết thật, ngày và đêm.
 - Phố phường Việt Nam sống động bên ngoài, nhóm chat công ty, chơi game, bida, karaoke khi phiên đang nghỉ.
 - Đi dạo ở góc nhìn thứ nhất (WASD, E để tương tác), chế độ chụp ảnh (P) và clip 15 giây.
-- Chế độ danh sách tắt 3D cho đỡ pin.
 
 ## An toàn
 
@@ -117,7 +117,7 @@ npm run build && npm run test:e2e              # test end-to-end
 | --- | --- | --- |
 | Server | `server/` | Node.js |
 | Trang web | `app/`, `src/components/` | Next.js |
-| Văn phòng 3D | `src/office/` | three.js |
+| Quán cà phê | `src/office/` | canvas thuần |
 | Chữ trên giao diện | `src/i18n/locales/` | mỗi ngôn ngữ một thư mục |
 
 Xem thêm [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) và [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -125,7 +125,7 @@ Xem thêm [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) và [CONTRIBUTING.md](CON
 ## Ghi công
 
 - Ý tưởng từ agents-at-work, cubicle-crew (MIT, mẫu lệnh nguy hiểm) và cc-reaper (Apache-2.0, luật RAM và CPU).
-- [three.js](https://threejs.org) và qrcode.js (MIT); font Be Vietnam Pro và JetBrains Mono (SIL OFL).
+- qrcode.js (MIT); font Be Vietnam Pro và JetBrains Mono (SIL OFL).
 - [Simple Icons](https://simpleicons.org) và [Kenney Car Kit](https://kenney.nl/assets/car-kit) (CC0);
   thời tiết từ [Open-Meteo](https://open-meteo.com).
 - Tên cửa hàng và thương hiệu (Circle K, GS25, 7-Eleven, WinMart, Grab, Xanh SM, Shopee, Mixue, Highlands Coffee và

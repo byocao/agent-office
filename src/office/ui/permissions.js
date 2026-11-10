@@ -6,8 +6,6 @@ import { icon } from './icons.js';
 import { colorOf, dn, sessions, workers } from '../people/workers.js';
 import { toast } from './activity.js';
 import { mdBlocks, openWindowOf } from './session-drawer.js';
-import { autoCam, panTo } from './camera-bar.js';
-import { fp } from '../interact/first-person.js';
 import { TOKEN } from '../net/live.js';
 import { sfx } from '../audio/sfx.js';
 import { DEMO } from '../demo/demo.js';
@@ -106,7 +104,7 @@ export function renderPerms() {
 }
 export function onPerm(p) {
   perms.set(p.id, p); renderPerms(); sfx.play('perm');
-  const w = workers.get(p.sess); if (w) { w.anim = 'hand'; if (!state.selectedId && autoCam()) panTo(w); }
+  const w = workers.get(p.sess); if (w && !w.lastSay?.kind) w.say('wait', tr('people.needsApproval'), 'wait');
 }
 
 export function setup() {
@@ -138,11 +136,11 @@ export function setup() {
     perms.delete(id); renderPerms();
   });
   document.addEventListener('keydown', (e) => {
-    if (e.code !== 'KeyO' || !state.selectedId || !state.isLocal || e.metaKey || e.ctrlKey || e.altKey || fp.on || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+    if (e.code !== 'KeyO' || !state.selectedId || !state.isLocal || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
     const s = sessions.get(state.selectedId); if (s) { e.preventDefault(); openWindowOf(s); }
   });
   document.addEventListener('keydown', (e) => {
-    if (!perms.size || e.metaKey || e.ctrlKey || e.altKey || fp.on || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+    if (!perms.size || e.metaKey || e.ctrlKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
     const k = { KeyY: 'allow', KeyN: 'deny', KeyA: 'always' }[e.code]; if (!k) return;
     const card = $('perm-stack').querySelector('.perm-card[data-kind="perm"]'); const b = card?.querySelector(`[data-perm="${k}"]`);
     if (b && !b.disabled) { e.preventDefault(); b.click(); }

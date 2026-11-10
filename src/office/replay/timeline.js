@@ -2,12 +2,11 @@
 import { buildTimeline } from '../../shared/timeline.js';
 import { state } from '../core/state.js';
 import { $, el, fmtAgo, fmtBytes, fmtClock, hhmm, replay } from '../core/env.js';
-import { renderer } from '../scene/renderer.js';
+import { cafeCanvas } from '../ui/cafe.js';
 import { colorOf, dn, sessions } from '../people/workers.js';
 import { toast } from '../ui/activity.js';
 import { openSession } from '../ui/session-drawer.js';
 import { renderBell } from '../ui/topbar.js';
-import { closePlace } from '../interact/place-cards.js';
 import { TOKEN } from '../net/live.js';
 import { DEMO, connect, startDemo } from '../demo/demo.js';
 import { dayKey, rangeOf, renderReplay, seekTo, startReplay } from './replay.js';
@@ -39,7 +38,7 @@ async function loadTimeline(range = tl.range) {
   renderTimeline();
 }
 function openTimeline() {
-  $('tl').hidden = false; closePlace();
+  $('tl').hidden = false;
   tl.data = null; loadTimeline();
   clearInterval(tl.timer); tl.timer = setInterval(() => { if (!$('tl').hidden && tl.range !== 'yesterday' && document.visibilityState === 'visible') loadTimeline(); }, 30000);
   $('tl-close').focus({ preventScroll: true });
@@ -122,7 +121,7 @@ async function startRecording() {
       stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30, displaySurface: 'browser' }, audio: false, preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude' });
     } catch (e) { if (e?.name === 'NotAllowedError') { toast(tr('replay.rec.canceled')); return; } }
   }
-  if (!stream) { stream = renderer.domElement.captureStream(30); whole = false; }
+  if (!stream) { const cv = cafeCanvas(); if (!cv) return; stream = cv.captureStream(30); whole = false; }
   const type = ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
   try { recorder = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 10e6 } : undefined); }
   catch { stream.getTracks().forEach((t) => t.stop()); toast(tr('replay.rec.failed')); return; }

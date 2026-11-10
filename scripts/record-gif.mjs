@@ -3,7 +3,7 @@
 //
 //   npm run build && npm start &              # or `npm run dev`, any running office will do
 //   node scripts/record-gif.mjs               # 20 s of the company floor, 12 frames a second
-//   node scripts/record-gif.mjs --seconds 12 --width 800 --viewport 1440 --url 'http://127.0.0.1:4310/?demo&layout=cozy'
+//   node scripts/record-gif.mjs --seconds 12 --width 800 --viewport 1440 --url 'http://127.0.0.1:4310/?demo'
 //
 // Run it on a machine with a real GPU: in a VM or CI the browser falls back to software WebGL and the office drops to
 // a few frames a second. Frames come from Chrome's screencast (one per repaint), are resampled to an even rate, then
@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const arg = (name, dflt) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : dflt; };
-const URL_ = arg('url', 'http://127.0.0.1:4310/?demo&layout=pro&lang=en');
+const URL_ = arg('url', 'http://127.0.0.1:4310/?demo&lang=en');
 const SECONDS = Number(arg('seconds', 20)), FPS = Number(arg('fps', 12));
 // the page is laid out at --viewport wide (16:10) and the GIF scaled down to --width, so the office is not cramped
 const VIEW = Number(arg('viewport', 1280)), WIDTH = Number(arg('width', 960));

@@ -2,7 +2,7 @@
   "name": "agent-office",
   "version": "0.2.0",
   "private": true,
-  "description": "A 3D office for your Claude Code sessions that also looks after your Mac: live agents, approve from the office, RAM per session, forgotten dev servers, cleanup.",
+  "description": "A pixel café for your Claude Code sessions that also looks after your Mac: live agents, approve from the office, RAM per session, forgotten dev servers, cleanup.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -31,8 +31,7 @@
   "dependencies": {
     "next": "16.4.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "three": "0.160.0"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

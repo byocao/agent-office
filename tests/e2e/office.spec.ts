@@ -9,30 +9,40 @@ import { DATA_DIR, HOME_DIR } from '../../playwright.config';
 function watchErrors(page: Page) {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|WebGL/i.test(m.text())) errors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/favicon/i.test(m.text())) errors.push(m.text()); });
   return errors;
 }
 
-// The first visit's tour (ui/tips.js) would sit over what the tests click: they start as returning visitors.
-test.beforeEach(async ({ page }) => { await page.addInitScript(() => { try { localStorage.setItem('office-tips', 'seen'); } catch { /* private mode */ } }); });
+test('the café starts in demo mode without errors', { tag: '@smoke' }, async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/?demo');
+  await expect(page.locator('#stage canvas.cafe-cv')).toBeVisible();
+  await expect(page.locator('#demo-chip')).toBeVisible();
+  await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
+  await page.waitForTimeout(3000);
+  expect(errors).toEqual([]);
+});
 
-for (const layout of ['pro', 'cozy', 'hq']) {
-  test(`the ${layout} office starts in demo mode without errors`, { tag: '@smoke' }, async ({ page }) => {
-    const errors = watchErrors(page);
-    await page.goto(`/?demo&layout=${layout}`);
-    await expect(page.locator('#stage canvas')).toBeVisible();
-    await expect(page.locator('#demo-chip')).toBeVisible();
-    await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
-    await page.waitForTimeout(3000);
-    expect(errors).toEqual([]);
-  });
-}
+test('settings: three tabs, time of day, language', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/?demo');
+  await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
+  await page.click('#btn-look');
+  await expect(page.locator('#pop-look')).toBeVisible();
+  await expect(page.locator('[data-st-tab]')).toHaveCount(3);
+  await page.click('[data-time="night"]');
+  await expect(page.locator('[data-time="night"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.click('[data-time="auto"]');
+  await page.click('[data-st-tab="display"]');
+  await expect(page.locator('#st-panel-display [data-lang]')).toHaveCount(2);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#pop-look')).toBeHidden();
+  expect(errors).toEqual([]);
+});
 
 test('panels open and close', async ({ page }) => {
-  test.setTimeout(180_000);   // (a Mac rendering it in software takes ~100 s for all of it, before and after 1/11: not a regression)
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });   // (a software-rendered page is slow enough at full quality to time out)
   const errors = watchErrors(page);
-  await page.goto('/?demo&layout=pro');
+  await page.goto('/?demo');
   await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 60_000 });   // (a busy machine takes ~17 s)
   await page.click('#btn-look');
   await expect(page.locator('#pop-look')).toBeVisible();
@@ -44,9 +54,6 @@ test('panels open and close', async ({ page }) => {
   await page.click('#tl-open');
   await expect(page.locator('#tl')).toBeVisible();
   await page.click('#tl-close');
-  await page.click('#btn-lite');
-  await expect(page.locator('#lite')).toBeVisible();
-  await page.click('#btn-lite');
   expect(errors).toEqual([]);
 });
 
@@ -59,7 +66,7 @@ test('hooks are accepted only from this machine and the page needs a token from 
 
 test('a session opens its drawer from the list', async ({ page }) => {
   const errors = watchErrors(page);
-  await page.goto('/?demo&layout=pro');
+  await page.goto('/?demo');
   const row = page.locator('#rail-list .ri').first();
   await expect(row).toBeVisible({ timeout: 20_000 });
   await row.click();
@@ -72,17 +79,17 @@ test('a session opens its drawer from the list', async ({ page }) => {
 });
 
 test('English by default, another language on request', { tag: '@smoke' }, async ({ page }) => {
-  await page.goto('/?demo&layout=cozy');
+  await page.goto('/?demo');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.locator('#btn-look')).toContainText('Settings');
-  await page.goto('/?demo&layout=cozy&lang=vi');
+  await page.goto('/?demo&lang=vi');
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
   await expect(page.locator('#btn-look')).toContainText('Cài đặt');
 });
 
 test('the weekly recap draws its card', async ({ page }) => {
   const errors = watchErrors(page);
-  await page.goto('/?demo&layout=cozy');
+  await page.goto('/?demo');
   await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
   await page.click('#wrap-open');
   await expect(page.locator('#wrap-modal')).toBeVisible();
@@ -98,67 +105,12 @@ test('the weekly recap draws its card', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('settings: four tabs, character portraits, graphics level', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.goto('/?demo&layout=cozy');
-  await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
-  await page.click('#btn-look');
-  await expect(page.locator('#pop-look')).toBeVisible();
-  await page.click('[data-st-tab="people"]');
-  await expect(page.locator('#st-panel-people')).toBeVisible();
-  await expect(page.locator('[data-portrait="toy"] canvas')).toBeVisible();   // drawn by the office's renderer
-  await page.click('[data-st-tab="display"]');
-  await page.click('[data-quality="low"]');
-  await expect(page.locator('[data-quality="low"]')).toHaveAttribute('aria-pressed', 'true');
-  await page.click('[data-quality="auto"]');
-  await page.keyboard.press('Escape');
-  await expect(page.locator('#pop-look')).toBeHidden();
-  expect(errors).toEqual([]);
-});
-
-test('photo mode hides the panels and saves a PNG', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.goto('/?demo&layout=cozy');
-  await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
-  await page.click('#btn-photo');
-  await expect(page.locator('#photo-bar')).toBeVisible();
-  await expect(page.locator('.topbar')).toBeHidden();
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#ph-shoot')]);
-  expect(download.suggestedFilename()).toMatch(/^agent-office-.*\.png$/);
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.topbar')).toBeVisible();
-  expect(errors).toEqual([]);
-});
-
-test('a vertical 15-second clip with its music: 1080 × 1920, a sound track', async ({ page }) => {
-  test.setTimeout(150_000);
-  const errors = watchErrors(page);
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&layout=cozy');
-  await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
-  await page.click('#btn-photo');
-  await page.click('[data-clip-shape="tall"]');
-  await expect(page.locator('[data-clip-shape="tall"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#ph-music')).toHaveAttribute('aria-pressed', 'true');
-  const [download] = await Promise.all([page.waitForEvent('download', { timeout: 90_000 }), page.click('#ph-clip')]);
-  expect(download.suggestedFilename()).toMatch(/^agent-office-clip-.*-9x16\.(mp4|webm)$/);
-  const bytes = fs.readFileSync(await download.path());
-  expect(bytes.includes('mp4a') || bytes.includes('A_OPUS')).toBe(true);   // (an AAC or Opus track: the music)
-  const size = await page.evaluate(async (b64) => {
-    const v = document.createElement('video'); v.muted = true; v.src = `data:video/${b64.startsWith('GkXf') ? 'webm' : 'mp4'};base64,${b64}`;
-    await new Promise((ok, no) => { v.onloadedmetadata = ok; v.onerror = no; });
-    return [v.videoWidth, v.videoHeight];
-  }, bytes.toString('base64'));
-  expect(size).toEqual([1080, 1920]);
-  expect(errors).toEqual([]);
-});
-
 test('the group chat: people post, a poll, @ someone and they answer, a reply, recall, reactions, stickers, a reminder, the unread count', async ({ page }) => {
   test.setTimeout(420_000);   // (many steps, and a headless browser draws the office slowly)
   const errors = watchErrors(page);
   // (list mode: the office keeps going behind the chat, drawn once a second; a headless browser draws it slowly)
   await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); localStorage.setItem('office-lite', 'on'); if (!sessionStorage.getItem('e2e-chat')) { localStorage.removeItem('office-chat-demo'); sessionStorage.setItem('e2e-chat', '1'); } } catch { /* private mode */ } });   // (cleared once: not again on the reload below)
-  await page.goto('/?demo&debug&layout=pro');
+  await page.goto('/?demo&debug');
   await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 60_000 });
   type Eng = { poll: (from: string, q: string, o: string[]) => void, remind: (from: string, t: string, at: number, rep: string) => void };
   type Chat = { chat: { msgs: { kind: string, from: string, text: string }[] }, chatSay: (from: string, text: string, o?: object) => void, chatEngine: () => Eng,
@@ -513,632 +465,6 @@ test('giving Claude work from the chat: a folder or a tagged conversation, the r
   expect(errors).toEqual([]);
 });
 
-// The handful of debug hooks (?debug) the reaction tests read: who is doing what, and the floor lamps.
-type Person = { station: string, phase: string, chore?: { thing?: unknown, gathering?: unknown }, deliver: () => void, reset: () => void, anim: string, goHomeNow: () => void,
-  onBreak?: boolean, doze?: boolean, carry?: string };
-type DebugOffice = { director: Person, workers: Map<string, Person>, floorLamps: { on: boolean }[], PROPS: Map<string, unknown>, activateProp: (p: unknown) => void,
-  sessions: Map<string, object>, upsert: (s: object) => void, pauseDemo: () => void, speed: (n: number) => void,
-  street?: unknown, goOut: (kind: string, key?: string) => boolean, outing: { stage: string, id?: string, shop?: string, item?: string } | null,
-  fp: { street: boolean, pos?: { set: (x: number, z: number) => void }, yaw?: number }, fpToStreet: () => void, limitOut: (min: number) => void, napOn: boolean,
-  parcel: () => boolean, clean: () => void, staff: { cleaner: { offstage: boolean }, courier: { offstage: boolean }, delivery: unknown, strips: unknown[] },
-  standup: () => boolean, teatime: () => boolean,
-  attendance?: () => { terminal: boolean, log: Record<string, { name: string, at: string, out: string | null, inferred: boolean }>, earliest: string, screen: string, tabs: string, pending: string[] },
-  birthday?: () => boolean, party?: { banner: boolean, members: number, slices: number } | false,
-  testRun: (ok?: boolean, i?: number) => string | false, commit: (i?: number) => string | false, push: (i?: number) => string | false, tests: Record<string, string>,
-  post: { inBox: number, today: number, trip: boolean, postman: { offstage: boolean, carry?: string } | null } };
-type Win = { __office?: DebugOffice };   // (written out in each evaluate: the page cannot see this file's functions)
-
-test('switch off the director’s lamp after dark and the director switches it back on', async ({ page }) => {
-  const errors = watchErrors(page);
-  // people walk at the frame rate: a small window on low graphics keeps a software-rendered page quick enough
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=22:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.director, null, { timeout: 30_000 });   // (no side list this narrow)
-  // keep the director at the desk (the demo keeps handing out work): no more deliveries, and back in his chair
-  await page.evaluate(() => { const d = (window as unknown as Win).__office!.director; d.deliver = () => {}; d.reset(); });
-  const lampOn = () => page.evaluate(() => (window as unknown as Win).__office!.floorLamps[0].on);
-  expect(await lampOn()).toBe(true);
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.activateProp(o.PROPS.get('lamp0')); });
-  expect(await lampOn()).toBe(false);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.director.chore?.thing != null)).toBe(true);
-  // (a software-rendered page runs the office slowly: time for the walk there and back)
-  await expect.poll(lampOn, { timeout: 30_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => { const d = (window as unknown as Win).__office!.director; return !d.chore && d.station === 'home'; }), { timeout: 30_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('the meeting bell calls people to the meeting table', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=cozy&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.PROPS.get('bell'), null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.activateProp(o.PROPS.get('bell')); });
-  await expect.poll(() => page.evaluate(() => [...(window as unknown as Win).__office!.workers.values()].some((w) => w.chore?.gathering)), { timeout: 30_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('someone resting pops down to the convenience store and comes back with something from it', async ({ page }) => {
-  test.setTimeout(200_000);   // (a walk across the street, in to the till and back up: longer than most)
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.street, null, { timeout: 30_000 });
-  // the demo keeps everyone busy: stop it, everyone done, and time sped up until someone is napping at their desk
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.goOut('shop')), { timeout: 45_000 }).toBe(true);
-  // down in the lift, across the street, into the shop, and back up to the desk
-  await expect.poll(() => page.evaluate(() => ['street', 'in', 'back'].includes((window as unknown as Win).__office!.outing?.stage ?? '')), { timeout: 45_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.outing), { timeout: 130_000 }).toBe(null);
-  expect(errors).toEqual([]);
-});
-
-test('a first visit gets a short tour of what you can click', async ({ page }) => {
-  const errors = watchErrors(page);
-  // a first visitor, once: the reload below is the same visitor coming back
-  await page.addInitScript(() => { try { if (!sessionStorage.getItem('first')) { sessionStorage.setItem('first', '1'); localStorage.removeItem('office-tips'); } } catch { /* private mode */ } });
-  await page.goto('/?demo&layout=cozy');
-  const card = page.locator('.tour');
-  await expect(card).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.tour-title')).toHaveText(/lamp/i);
-  await page.click('.tour-next');
-  await expect(page.locator('.tour-n')).toHaveText(/^2\//);
-  await page.click('.tour-skip');
-  await expect(card).toHaveCount(0);
-  // seen: not again on the next visit
-  await page.reload();
-  await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
-  await page.waitForTimeout(8000);
-  await expect(card).toHaveCount(0);
-  expect(errors).toEqual([]);
-});
-
-test('walking in, the lift goes down to the street and back up', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.street, null, { timeout: 30_000 });
-  await page.click('#btn-fp');
-  await page.evaluate(() => (window as unknown as Win).__office!.fpToStreet());
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.fp.street), { timeout: 10_000 }).toBe(true);
-  // out on the pavement by the door: the way back in is right there
-  await expect(page.locator('#fp-near')).toHaveText(/office/i, { timeout: 10_000 });
-  await page.keyboard.press('KeyE');
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.fp.street), { timeout: 10_000 }).toBe(false);
-  expect(errors).toEqual([]);
-});
-
-test('a test run: the session watches it at the test board, whose lamp ends green', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=10:30&lang=en');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.testRun, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(3); });
-  const id = await page.evaluate(() => (window as unknown as Win).__office!.testRun(true, 0));
-  expect(id).toBeTruthy();
-  // amber while it runs, the character over at the board; green after
-  expect(await page.evaluate((i) => (window as unknown as Win).__office!.tests[i as string], id)).toBe('run');
-  await expect.poll(() => page.evaluate((i) => (window as unknown as Win).__office!.workers.get(i as string)?.station, id), { timeout: 30_000 }).toBe('tests');
-  await expect.poll(() => page.evaluate((i) => (window as unknown as Win).__office!.tests[i as string], id), { timeout: 15_000 }).toBe('ok');
-  await expect(page.locator('#feed').getByText(/tests pass/i).first()).toBeVisible({ timeout: 10_000 });
-  expect(errors).toEqual([]);
-});
-
-test('a commit goes in the post box, and a push brings the postman to empty it', async ({ page }) => {
-  test.setTimeout(180_000);   // (the letter's walk, then the postman up and down by the lift)
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=10:30&lang=en');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.commit, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(4); });
-  const before = await page.evaluate(() => (window as unknown as Win).__office!.post.today);
-  const id = await page.evaluate(() => (window as unknown as Win).__office!.commit(0));
-  expect(id).toBeTruthy();
-  expect(await page.evaluate(() => (window as unknown as Win).__office!.post.today)).toBe(before + 1);
-  // down to the box with the letter, posted
-  await expect.poll(() => page.evaluate((i) => (window as unknown as Win).__office!.workers.get(i as string)?.station, id), { timeout: 40_000 }).toBe('post');
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.post.inBox), { timeout: 20_000 }).toBeGreaterThan(0);
-  // a push: the postman comes up, empties the box, and goes
-  await page.evaluate(() => (window as unknown as Win).__office!.push(0));
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.post.postman?.offstage), { timeout: 60_000 }).toBe(false);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.post.inBox), { timeout: 60_000 }).toBe(0);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.post.trip), { timeout: 60_000 }).toBe(false);
-  expect(errors).toEqual([]);
-});
-
-test('the traffic police: a checkpoint by the office, a rider stopped, the record written and signed', async ({ page }) => {
-  test.setTimeout(420_000);   // (a stop takes about half a minute of the office's clock; a headless page runs slow)
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00&csgt');   // (?csgt: the checkpoint now, a stop every few seconds)
-  await page.waitForFunction(() => (window as unknown as Win).__office?.street, null, { timeout: 30_000 });
-  await page.evaluate(() => (window as unknown as Win).__office!.speed(5));   // (a headless page draws few frames: the street would crawl)
-  type Csgt = { state: () => { phase: string, stop: { kind: string, step: string } | null, last: { kind: string, written: boolean } | null } };
-  const state = () => page.evaluate(() => ((window as unknown as Win).__office!.street as { csgt: Csgt }).csgt.state());
-  await expect.poll(async () => (await state()).phase, { timeout: 60_000 }).toBe('on');
-  // by day: a rider without a helmet, three on a scooter, on the phone or through the red light is pulled in; the
-  // officer salutes, checks the papers on VNeID, writes the record, the rider signs and rides on
-  await expect.poll(async () => (await state()).stop?.step ?? '', { timeout: 120_000 }).toMatch(/salute|reason|papers|write|sign|go/);
-  await expect.poll(async () => (await state()).last?.written ?? false, { timeout: 150_000 }).toBe(true);
-  // the chip over the checkpoint opens the card: the steps, the clause of Decree 168/2024, and the record itself
-  await page.locator('.csgt-chip').evaluate((b: HTMLElement) => b.click());
-  await expect(page.locator('.csgt-card')).toBeVisible();
-  await expect(page.locator('.csgt-card .csgt-law')).toContainText('168/2024/NĐ-CP');
-  await expect(page.locator('.csgt-paper')).toContainText('RECORD OF AN ADMINISTRATIVE VIOLATION');
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.csgt-card')).toBeHidden();
-  expect(errors).toEqual([]);
-});
-
-test('an evening at the quán nhậu: down for a few rounds, "dô", then home by Grab and never by scooter', async ({ page }) => {
-  test.setTimeout(900_000);   // (packing up, the lift, across the street at the lights, a round, a ride home: long on a slow headless page)
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=18:40&nhau');   // (?nhau: the quán open, tonight's round now)
-  type Nh = { go: () => number, end: () => boolean, state: () => { stage: string, toasts: number, members: { stage: string, way: string | null, away: boolean }[] } | null };
-  type O = { nhau: Nh, pauseDemo: () => void, sessions: Map<string, object>, upsert: (s: object) => void, speed: (n: number) => void, chat: { msgs: { text: string }[] }, street?: { nhauDebug: { card: () => boolean } } };
-  await page.waitForFunction(() => !!(window as unknown as { __office?: O }).__office?.nhau && !!(window as unknown as { __office?: O }).__office?.street, null, { timeout: 60_000 });
-  await page.evaluate(() => { const o = (window as unknown as { __office: O }).__office; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(5); });
-  const state = () => page.evaluate(() => (window as unknown as { __office: O }).__office.nhau.state());
-  // people resting go down (an invitation in the group chat), over the street, onto the stools; a round of "dô"
-  await expect.poll(() => page.evaluate(() => { const n = (window as unknown as { __office: O }).__office.nhau; return n.state() ? 1 : n.go(); }), { timeout: 200_000, message: 'someone goes down to the quán' }).toBeGreaterThan(0);
-  await expect.poll(async () => (await state())?.members.filter((m) => m.stage === 'sit').length ?? 0, { timeout: 300_000, message: 'someone sits at the table' }).toBeGreaterThan(0);
-  await expect.poll(async () => (await state())?.toasts ?? 0, { timeout: 90_000, message: 'a round of dô' }).toBeGreaterThan(0);
-  const said = (re: string) => page.evaluate((r) => (window as unknown as { __office: O }).__office.chat.msgs.some((m) => new RegExp(r).test(m.text)), re);
-  await expect.poll(() => said('A few cans tonight'), { timeout: 30_000, message: 'the invitation in the chat' }).toBe(true);
-  // the quán's card: the menu with its prices, who from the office is at the table
-  expect(await page.evaluate(() => (window as unknown as { __office: O }).__office.street!.nhauDebug.card())).toBe(true);
-  await expect(page.locator('.nhau-card')).toContainText('20.000đ');
-  await page.keyboard.press('Escape');
-  // time to go: "don't drive" in the chat, and everyone home by a ride, nobody on their own scooter
-  await page.evaluate(() => (window as unknown as { __office: O }).__office.nhau.end());
-  await expect.poll(() => said('don’t drive'), { timeout: 30_000, message: 'no driving after a drink, in the chat' }).toBe(true);
-  // (the first ride home: whoever called one went by Grab, Xanh SM or a taxi, not by their own scooter)
-  await expect.poll(async () => (await state())?.members.some((m) => m.stage === 'home' && m.away) ?? false, { timeout: 300_000, message: 'someone home by a ride' }).toBe(true);
-  const rode = (await state())!.members.filter((m) => m.way);
-  expect(rode.length, 'someone rode home').toBeGreaterThan(0);
-  expect(rode.every((m) => ['grab', 'xsm', 'taxi'].includes(m.way!))).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('the alcohol checkpoint by the quán nhậu: a regular rides off after a few, the breath test shows it', async ({ page }) => {
-  test.setTimeout(420_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=19:40&csgt&nhau');   // (the evening: the checkpoint is the alcohol one, on the quán's street)
-  type S = { csgt: { state: () => { phase: string, alc: boolean, stop: object | null, site: { evening: boolean }, last: { kind: string, fromQuan: boolean } | null } }, nhauDebug: { local: () => boolean, state: () => { regulars: number } } };
-  await page.waitForFunction(() => (window as unknown as { __office?: { street?: S } }).__office?.street?.csgt, null, { timeout: 60_000 });
-  await page.evaluate(() => (window as unknown as { __office: { speed: (n: number) => void } }).__office.speed(5));
-  const st = () => page.evaluate(() => (window as unknown as { __office: { street: S } }).__office.street.csgt.state());
-  await expect.poll(async () => (await st()).phase, { timeout: 60_000 }).toBe('on');
-  expect((await st()).alc).toBe(true);
-  expect((await st()).site.evening).toBe(true);
-  // a regular gets up, rides off on his own scooter, and is stopped for the breath test: alcohol, the record written
-  await expect.poll(() => page.evaluate(() => { const S = (window as unknown as { __office: { street: S } }).__office.street; return !S.csgt.state().stop && S.nhauDebug.local(); }), { timeout: 90_000 }).toBe(true);
-  await expect.poll(async () => (await st()).last?.fromQuan ?? false, { timeout: 180_000 }).toBe(true);
-  expect((await st()).last!.kind).toMatch(/^alc[123]$/);
-  expect(errors).toEqual([]);
-});
-
-test('going home by the street shows in the session list', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 1400, height: 800 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.street, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  // someone napping at their desk sets off home (at three in the afternoon they come straight back: on the way in)
-  await expect.poll(() => page.evaluate(() => { const w = [...(window as unknown as Win).__office!.workers.values()].find((p) => p.anim === 'sleep' && p.station === 'desk'); w?.goHomeNow(); return !!w; }), { timeout: 45_000 }).toBe(true);
-  await expect(page.locator('#rail-list .ri-dtxt', { hasText: /Heading home|On the way in/ }).first()).toBeVisible({ timeout: 45_000 });
-  expect(errors).toEqual([]);
-});
-
-// the accountant, the director's rounds and the guard (people/accountant.js, rounds.js, guard.js): their debug hooks
-type Staffed = { __office?: { workers?: unknown, sessions: Map<string, object>, upsert: (s: object) => void, pauseDemo: () => void, speed: (n: number) => void,
-  accountant?: { atDesk: boolean, x: number, job: string | null, warn: string }, report: () => boolean, budgetWarn: () => boolean,
-  rounds: () => boolean, round: { stage: string } | null, guard?: () => { night: boolean, gate: number, booth: number[] } } };
-
-test('the accountant takes the day’s cost report to the director and asks the top spender to go easy near the limit', async ({ page }) => {
-  test.setTimeout(150_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 1000, height: 640 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=17:20');
-  await page.waitForFunction(() => (window as unknown as Staffed).__office?.accountant?.atDesk, null, { timeout: 45_000 });
-  await page.evaluate(() => (window as unknown as Staffed).__office!.speed(3));   // (two walks across the floor: sped up, as the other trips)
-  expect(await page.evaluate(() => (window as unknown as Staffed).__office!.report())).toBe(true);
-  // over to the director's desk with the sheet, and back to her own
-  await expect.poll(() => page.evaluate(() => (window as unknown as Staffed).__office!.accountant!.x), { timeout: 40_000 }).toBeLessThan(-3.8);
-  await expect.poll(() => page.evaluate(() => { const a = (window as unknown as Staffed).__office!.accountant!; return a.atDesk && !a.job; }), { timeout: 60_000 }).toBe(true);
-  expect(await page.evaluate(() => (window as unknown as Staffed).__office!.budgetWarn())).toBe(true);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Staffed).__office!.accountant!.warn), { timeout: 60_000 }).toMatch(/token/i);
-  expect(errors).toEqual([]);
-});
-
-test('the director’s rounds: out of the corner office, round the desks, and back', async ({ page }) => {
-  test.setTimeout(300_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 1000, height: 640 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=10:05');
-  await page.waitForFunction(() => (window as unknown as Staffed).__office?.workers, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Staffed).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); });
-  // (at 10:05 the 10:00 round may already be under way: that one will do)
-  // (everyone done at once: each comes to report first, and reports come before a round)
-  await expect.poll(() => page.evaluate(() => { const o = (window as unknown as Staffed).__office!; return !!o.round || o.rounds(); }), { timeout: 150_000 }).toBe(true);
-  await page.evaluate(() => (window as unknown as Staffed).__office!.speed(3));
-  await expect.poll(() => page.evaluate(() => (window as unknown as Staffed).__office!.round?.stage ?? 'over'), { timeout: 40_000 }).toBe('look');
-  await expect.poll(() => page.evaluate(() => (window as unknown as Staffed).__office!.round), { timeout: 90_000 }).toBe(null);
-  expect(errors).toEqual([]);
-});
-
-test('the security guard: a booth by the street door, the folding gate drawn across it at night', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 1000, height: 640 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=22:30');
-  await page.waitForFunction(() => (window as unknown as Staffed).__office?.guard?.(), null, { timeout: 45_000 });
-  expect((await page.evaluate(() => (window as unknown as Staffed).__office!.guard!())).night).toBe(true);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Staffed).__office!.guard!().gate), { timeout: 30_000 }).toBeGreaterThan(0.6);
-  await page.goto('/?demo&debug&layout=pro&at=10:00');
-  await page.waitForFunction(() => (window as unknown as Staffed).__office?.guard?.(), null, { timeout: 45_000 });
-  const day = await page.evaluate(() => (window as unknown as Staffed).__office!.guard!());
-  expect(day.night).toBe(false);
-  expect(day.gate).toBe(0);
-  expect(errors).toEqual([]);
-});
-
-test('out of Claude: people go on a break until the limit resets, then the bell calls them back', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.workers.size, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  await page.evaluate(() => (window as unknown as Win).__office!.limitOut(0.5));   // the limit used up, back in half a minute
-  const onBreak = () => page.evaluate(() => [...(window as unknown as Win).__office!.workers.values()].filter((w) => w.onBreak && w.station !== 'desk').length);
-  await expect.poll(onBreak, { timeout: 30_000 }).toBeGreaterThan(0);
-  await expect.poll(onBreak, { timeout: 45_000 }).toBe(0);
-  expect(errors).toEqual([]);
-});
-
-test('the attendance terminal: a new session clocks in by the lift, HR sees them to their desk and puts up their name', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=09:10&lang=en');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.attendance, null, { timeout: 30_000 });
-  // those already at their desks have clocked in (each session's first sign of the day), so the plate has an earliest
-  await expect.poll(() => page.evaluate(() => Object.keys((window as unknown as Win).__office!.attendance!().log).length), { timeout: 20_000 }).toBeGreaterThan(2);
-  expect(await page.evaluate(() => (window as unknown as Win).__office!.attendance!().earliest)).not.toBe('-');
-  // a new session: up in the lift, a finger on the terminal (its own entry, not inferred), then HR puts its name on the pod
-  await page.evaluate(() => {
-    const o = (window as unknown as Win).__office!, list = [...o.sessions.values()] as { desk: number }[], used = new Set(list.map((s) => s.desk));
-    const desk = [...Array(12).keys()].find((d) => !used.has(d));
-    o.upsert({ ...list[0], id: 'newbie', name: 'web-new', status: 'work', desk, dir: '~/code/web-new', git: { repo: 'web-new' }, subs: [], doneSubs: [], bg: [] });
-    o.speed(4);   // (HR comes from the far corner of the floor)
-  });
-  await expect.poll(() => page.evaluate(() => { const e = (window as unknown as Win).__office!.attendance!().log.newbie; return !!e && !e.inferred; }), { timeout: 30_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.attendance!().tabs.split('|').includes('web-new')), { timeout: 60_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('the month’s birthdays: HR brings the cake, the banner goes up, everyone sings and gets a slice', async ({ page }) => {
-  test.setTimeout(150_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:20&lang=en');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.birthday, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(4); });
-  // (once someone is free to come)
-  await expect.poll(() => page.evaluate(() => { const o = (window as unknown as Win).__office!; return !!o.party || o.birthday!(); }), { timeout: 45_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => { const p = (window as unknown as Win).__office!.party; return !!p && p.banner; }), { timeout: 60_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => { const p = (window as unknown as Win).__office!.party; return p ? p.slices : 0; }), { timeout: 60_000 }).toBeGreaterThan(0);
-  expect(errors).toEqual([]);
-});
-
-test('the midday nap: half of those resting sleep head down on the desk', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=cozy&at=12:45');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.workers.size, null, { timeout: 30_000 });
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.napOn)).toBe(true);   // (from the first frame on)
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  await expect.poll(() => page.evaluate(() => [...(window as unknown as Win).__office!.workers.values()].some((w) => w.doze)), { timeout: 45_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('a Shopee courier brings a parcel and the one it is for collects it', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.workers.size, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.parcel()), { timeout: 45_000 }).toBe(true);
-  // up in the lift, onto the counter, called out, collected
-  await expect.poll(() => page.evaluate(() => { const S = (window as unknown as Win).__office!.staff; return !S.delivery && S.courier.offstage; }), { timeout: 60_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('the evening cleaner mops the aisles (wet strips), then goes home', async ({ page }) => {
-  test.setTimeout(180_000);   // (every aisle mopped: long on a busy machine)
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=cozy&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.staff, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.speed(6); o.clean(); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.staff.strips.length), { timeout: 30_000 }).toBeGreaterThan(0);
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.staff.cleaner.offstage), { timeout: 75_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('Monday 9:00 stand-up and Friday 16:00 tea in the pantry', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.workers.size, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.standup()), { timeout: 30_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => [...(window as unknown as Win).__office!.workers.values()].some((w) => w.chore?.gathering)), { timeout: 30_000 }).toBe(true);
-  // after the meeting, the tea: someone with a cup of milk tea at a pantry table
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.teatime()), { timeout: 90_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => [...(window as unknown as Win).__office!.workers.values()].some((w) => w.carry === 'cup')), { timeout: 60_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('a trip to the GS25: the session list names the shop, and they come back with tokbokki or a drink', async ({ page }) => {
-  test.setTimeout(200_000);   // (a walk across the street, in to the till and back up: longer than most)
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 1400, height: 800 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');   // (Ho Chi Minh City by default: a GS25 across the street)
-  await page.waitForFunction(() => (window as unknown as Win).__office?.street, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.goOut('shop', 'gs25')), { timeout: 45_000 }).toBe(true);
-  const item = await page.evaluate(() => (window as unknown as Win).__office!.outing?.item);
-  expect(['tok', 'cup']).toContain(item);
-  await expect(page.locator('#rail-list .ri-dtxt', { hasText: /GS25/ }).first()).toBeVisible({ timeout: 45_000 });
-  // out of the shop with it in hand, and still with it back at the desk
-  await expect.poll(() => page.evaluate(() => { const o = (window as unknown as Win).__office!; return o.outing?.stage === 'back' && o.workers.get(o.outing.id!)?.carry; }), { timeout: 60_000 }).toBe(item);
-  await expect.poll(() => page.evaluate((it) => { const o = (window as unknown as Win).__office!; return !o.outing && [...o.workers.values()].some((w) => w.carry === it && w.anim === 'coffee'); }, item), { timeout: 130_000 }).toBe(true);
-  expect(errors).toEqual([]);
-});
-
-test('walking into the GS25: the door opens, the cashier says hello, a drink from the fridge paid by QR at the till', async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.street, null, { timeout: 30_000 });
-  await page.click('#btn-fp');
-  await page.evaluate(() => (window as unknown as Win).__office!.fpToStreet());
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.fp.street), { timeout: 10_000 }).toBe(true);
-  // stand at a point of the shop (its own frame: x along the front, z out to the street), looking in
-  const at = (lx: number, lz: number) => page.evaluate(([lx, lz]) => {
-    const o = (window as unknown as Win).__office!, d = (o.street as { doors: () => { key: string, x: number, z: number, face: number }[] }).doors().find((x) => x.key === 'gs25')!;
-    const rot = d.face === Math.PI ? 0 : Math.PI / 2, fx = d.x - (rot ? 0.45 : 0), fz = d.z - (rot ? 0 : 0.45);
-    const w = (x: number, z: number) => (rot ? [fx + z, fz - x] : [fx + x, fz + z]), [x, z] = w(lx, lz), [ax, az] = w(lx, lz - 1);
-    o.fp.pos!.set(x, z); o.fp.yaw = Math.atan2(ax - x, az - z);
-  }, [lx, lz]);
-  await at(0, 1.6);
-  // up to the door (it slides open) and in: the cashier says hello
-  await page.keyboard.down('KeyW');
-  await expect.poll(() => page.evaluate(() => !!((window as unknown as Win).__office!.street as { shop: { inside: () => unknown } }).shop.inside()), { timeout: 20_000 }).toBe(true);
-  await page.keyboard.up('KeyW');
-  await expect(page.locator('.shop-say', { hasText: 'GS25' }).first()).toBeVisible({ timeout: 5_000 });
-  await at(0, -3.2);
-  await expect(page.locator('#fp-near')).toHaveText(/banana milk/i, { timeout: 5_000 });
-  await page.keyboard.press('KeyE');
-  await at(2.2, -0.95);
-  await expect(page.locator('#fp-near')).toHaveText(/1 item/i, { timeout: 5_000 });
-  await page.keyboard.press('KeyE');
-  await expect(page.locator('.toast').last()).toHaveText(/QR/, { timeout: 5_000 });
-  expect(errors).toEqual([]);
-});
-
-test('walking into the Mixue: the red front and its Snow King, a cone ordered at the counter and paid; the CI green again sends someone for ice cream', async ({ page }) => {
-  test.setTimeout(240_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 900, height: 560 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); localStorage.setItem('office-tips', 'seen'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=17:00');
-  await page.waitForFunction(() => (window as unknown as Win).__office?.street, null, { timeout: 30_000 });
-  const door = () => page.evaluate(() => ((window as unknown as Win).__office!.street as { doors: () => { key: string }[] }).doors().find((x) => x.key === 'mixue') || null);
-  await expect.poll(door, { timeout: 30_000 }).not.toBeNull();
-  await page.click('#btn-fp');
-  await page.evaluate(() => (window as unknown as Win).__office!.fpToStreet());
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.fp.street), { timeout: 10_000 }).toBe(true);
-  const at = (lx: number, lz: number, look = -1) => page.evaluate(([lx, lz, look]) => {
-    const o = (window as unknown as Win).__office!, d = (o.street as { doors: () => { key: string, x: number, z: number, face: number }[] }).doors().find((x) => x.key === 'mixue')!;
-    const rot = d.face === Math.PI ? 0 : Math.PI / 2, fx = d.x - (rot ? 0.45 : 0), fz = d.z - (rot ? 0 : 0.45);
-    const w = (x: number, z: number) => (rot ? [fx + z, fz - x] : [fx + x, fz + z]), [x, z] = w(lx, lz), [ax, az] = w(lx, lz + look);
-    o.fp.pos!.set(x, z); o.fp.yaw = Math.atan2(ax - x, az - z);
-  }, [lx, lz, look]);
-  // the front, from across the pavement
-  await at(0, 5.5);
-  await page.waitForTimeout(1500);
-  await page.screenshot({ path: path.join(DATA_DIR, '..', 'mixue-front.png') });
-  // up to the door and in: "Mixue xin chào!"
-  await at(0, 1.6);
-  await page.keyboard.down('KeyW');
-  await expect.poll(() => page.evaluate(() => !!((window as unknown as Win).__office!.street as { shop: { inside: () => unknown } }).shop.inside()), { timeout: 20_000 }).toBe(true);
-  await page.keyboard.up('KeyW');
-  await expect(page.locator('.shop-say', { hasText: 'Mixue' }).first()).toBeVisible({ timeout: 5_000 });
-  await at(1.2, -0.3);
-  await page.waitForTimeout(800);
-  await page.screenshot({ path: path.join(DATA_DIR, '..', 'mixue-inside.png') });
-  // a cone at the counter: ordered, then paid
-  await at(0.9, -1.15);
-  await expect(page.locator('#fp-near')).toHaveText(/soft-serve cone/i, { timeout: 5_000 });
-  await page.keyboard.press('KeyE');
-  await expect(page.locator('#fp-near')).toHaveText(/1 item/i, { timeout: 5_000 });
-  await page.keyboard.press('KeyE');
-  await expect(page.locator('.toast').last()).toHaveText(/Mixue/, { timeout: 5_000 });
-  // the CI green again (incidents.js calls the same): someone resting goes to the Mixue for ice cream for everyone
-  await page.keyboard.press('Escape');
-  await page.evaluate(() => { const o = (window as unknown as Win).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(6); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as Win).__office!.goOut('treat')), { timeout: 45_000 }).toBe(true);
-  const trip = await page.evaluate(() => (window as unknown as Win).__office!.outing);
-  expect(trip?.shop).toBe('Mixue');
-  expect(trip?.item).toBe('grocery');
-  expect(errors).toEqual([]);
-});
-
-// shredder.js and foosball.js add their own hooks (?debug)
-type Paper = { compactNow: (i?: number) => string | null, paperwork: () => { levels: number[], shredder: { fill: number } | null, carrying: string[] },
-  pingpong: () => boolean, foos: { ready: boolean, over: boolean, score: number[], ball: number[], players: string[] } | null };
-type WinP = { __office?: DebugOffice & Paper };
-
-test('a compaction: the desk\'s stack of paper goes to the shredder and the desk starts again', async ({ page }) => {
-  test.setTimeout(150_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=10:40');
-  await page.waitForFunction(() => !!(window as unknown as WinP).__office?.compactNow, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as WinP).__office!; o.pauseDemo(); o.speed(3); });
-  const id = await page.evaluate(() => (window as unknown as WinP).__office!.compactNow(0));
-  expect(id).toBeTruthy();
-  const desk = await page.evaluate((id) => ((window as unknown as WinP).__office!.sessions.get(id!) as { desk: number }).desk, id);
-  // up from the desk with the stack, fed into the shredder (its bin fills a little), back with next to nothing on the desk
-  await expect.poll(() => page.evaluate((id) => (window as unknown as WinP).__office!.paperwork().carrying.includes(id!), id), { timeout: 60_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinP).__office!.paperwork().shredder!.fill), { timeout: 60_000 }).toBeGreaterThan(0);
-  await expect.poll(() => page.evaluate((d) => (window as unknown as WinP).__office!.paperwork().levels[d], desk), { timeout: 30_000 }).toBeLessThanOrEqual(2);
-  expect(errors).toEqual([]);
-});
-
-test('foosball: two who are resting play a game in the lounge, and work coming in ends it', async ({ page }) => {
-  test.setTimeout(240_000);   // (everyone settling down to rest first, then the walk over: slow on a software-rendered page)
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:20');
-  await page.waitForFunction(() => !!(window as unknown as WinP).__office?.pingpong, null, { timeout: 30_000 });
-  await page.evaluate(() => { const o = (window as unknown as WinP).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(3); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinP).__office!.pingpong()), { timeout: 90_000 }).toBe(true);
-  // both at the table, the ball moving
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinP).__office!.foos?.ready), { timeout: 90_000 }).toBe(true);
-  const b0 = await page.evaluate(() => (window as unknown as WinP).__office!.foos!.ball.join());
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinP).__office!.foos?.ball.join()), { timeout: 10_000 }).not.toBe(b0);
-  // work for one of them: the game stops and both go back
-  await page.evaluate(() => { const o = (window as unknown as WinP).__office!, id = o.foos!.players[0], s = o.sessions.get(id) as object; o.upsert({ ...s, status: 'work' }); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinP).__office!.foos), { timeout: 60_000 }).toBe(null);
-  expect(errors).toEqual([]);
-});
-
-// gaming.js adds its own hooks (?debug)
-type Tv = { on: boolean, kind: string | null, stage: string | null, npc: boolean, time: number | null, players: string[], me: boolean };
-type WinT = { __office?: DebugOffice & { tvGame: (k?: string) => boolean, tvPlay: () => void, tv: Tv, fp: { on: boolean } } };
-
-test('the lounge TV: two people resting play a match on the sofa, and in first person you sit down and play', async ({ page }) => {
-  test.setTimeout(300_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=10:40');
-  await page.waitForFunction(() => !!(window as unknown as WinT).__office?.tvGame, null, { timeout: 60_000 });
-  await page.evaluate(() => { const o = (window as unknown as WinT).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(3); });
-  const tv = () => page.evaluate(() => (window as unknown as WinT).__office!.tv);
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinT).__office!.tvGame('racing')), { timeout: 90_000 }).toBe(true);
-  // both on the sofa, the TV on, the race running
-  await expect.poll(async () => (await tv()).stage, { timeout: 120_000 }).toBe('play');
-  expect((await tv()).on).toBe(true);
-  const t0 = (await tv()).time;
-  await expect.poll(async () => (await tv()).time, { timeout: 60_000 }).not.toBe(t0);   // (after the 3-2-1)
-  // work for one of them: the game ends where it stands, both get up, the TV goes back to standby
-  await page.evaluate(() => { const o = (window as unknown as WinT).__office!, id = o.tv.players[0], s = o.sessions.get(id) as object; o.upsert({ ...s, status: 'work' }); });
-  await expect.poll(async () => (await tv()).on, { timeout: 90_000 }).toBe(false);
-  // first person: E at the TV sits you down; pick a game, play, get up
-  await page.click('#btn-fp');
-  await page.evaluate(() => (window as unknown as WinT).__office!.tvPlay());
-  await expect.poll(async () => (await tv()).stage, { timeout: 10_000 }).toBe('menu');
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('Space');
-  await expect.poll(async () => (await tv()).stage, { timeout: 10_000 }).toBe('play');
-  expect((await tv()).kind).toBe('racing');
-  await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(800); await page.keyboard.up('ArrowLeft');
-  await page.keyboard.press('Escape');
-  await expect.poll(async () => (await tv()).me, { timeout: 10_000 }).toBe(false);
-  expect(await page.evaluate(() => (window as unknown as WinT).__office!.fp.on)).toBe(true);   // (Esc gets you up, it doesn't leave first person)
-  expect(errors).toEqual([]);
-});
-
-// billiards.js and karaoke.js add their own hooks (?debug)
-type Bil = { stage: string | null, npc: boolean, shots: number, players: string[], me: boolean };
-type Ktv = { stage: string | null, npc: boolean, song: string | null, singers: string[], me: boolean, beat: number | null };
-type WinB = { __office?: DebugOffice & { bilGame: () => boolean, bilPlay: () => void, bil: Bil, ktvSing: () => boolean, ktvPlay: () => void, ktv: Ktv, fp: { on: boolean } } };
-const restAll = (page: Page) => page.evaluate(() => { const o = (window as unknown as WinB).__office!; o.pauseDemo(); for (const s of o.sessions.values()) o.upsert({ ...s, status: 'rest', bg: [], subs: [] }); o.speed(3); });
-
-test('pool in the lounge: two people resting play a frame, and in first person you pick up a cue and shoot', async ({ page }) => {
-  test.setTimeout(300_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=10:40');
-  await page.waitForFunction(() => !!(window as unknown as WinB).__office?.bilGame, null, { timeout: 60_000 });
-  await restAll(page);
-  const bil = () => page.evaluate(() => (window as unknown as WinB).__office!.bil);
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinB).__office!.bilGame()), { timeout: 90_000 }).toBe(true);
-  // both come over with a cue; the break goes in (the white leaves the head spot)
-  await expect.poll(async () => (await bil()).shots, { timeout: 150_000 }).toBeGreaterThan(0);
-  // work for one of them: the frame ends where it stands, both put their cues back and go
-  await page.evaluate(() => { const o = (window as unknown as WinB).__office!, id = o.bil.players[0], s = o.sessions.get(id) as object; o.upsert({ ...s, status: 'work' }); });
-  await expect.poll(async () => (await bil()).stage, { timeout: 90_000 }).toBe(null);
-  // first person: E at the table picks up a cue, a colleague comes over (or you play alone); hold Space, let go: a shot
-  await page.click('#btn-fp');
-  await page.evaluate(() => (window as unknown as WinB).__office!.bilPlay());
-  await expect.poll(async () => (await bil()).stage, { timeout: 90_000 }).toBe('you');
-  await page.keyboard.down('Space'); await page.waitForTimeout(500); await page.keyboard.up('Space');
-  await expect.poll(async () => (await bil()).shots, { timeout: 10_000 }).toBe(1);
-  await page.keyboard.press('Escape');
-  await expect.poll(async () => (await bil()).me, { timeout: 10_000 }).toBe(false);
-  expect(await page.evaluate(() => (window as unknown as WinB).__office!.fp.on)).toBe(true);   // (Esc puts the cue back, it doesn't leave first person)
-  expect(errors).toEqual([]);
-});
-
-test('karaoke: someone resting goes into the box and sings, and in first person you sing a song', async ({ page }) => {
-  test.setTimeout(300_000);
-  const errors = watchErrors(page);
-  await page.setViewportSize({ width: 800, height: 500 });
-  await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
-  await page.goto('/?demo&debug&layout=pro&at=15:10');
-  await page.waitForFunction(() => !!(window as unknown as WinB).__office?.ktvSing, null, { timeout: 60_000 });
-  await restAll(page);
-  const ktv = () => page.evaluate(() => (window as unknown as WinB).__office!.ktv);
-  await expect.poll(() => page.evaluate(() => (window as unknown as WinB).__office!.ktvSing()), { timeout: 90_000 }).toBe(true);
-  // in through the door, a mic each, the song running (the words move on)
-  await expect.poll(async () => (await ktv()).stage, { timeout: 150_000 }).toBe('sing');
-  const b0 = (await ktv()).beat || 0;
-  await expect.poll(async () => (await ktv()).beat || 0, { timeout: 30_000 }).toBeGreaterThan(b0 + 2);
-  // work for the singer: the song stops and they come out
-  await page.evaluate(() => { const o = (window as unknown as WinB).__office!, id = o.ktv.singers[0], s = o.sessions.get(id) as object; o.upsert({ ...s, status: 'work' }); });
-  await expect.poll(async () => (await ktv()).stage, { timeout: 90_000 }).toBe(null);
-  // first person: E at the box takes you in; pick the second song, sing, Esc takes you out
-  await page.click('#btn-fp');
-  await page.evaluate(() => (window as unknown as WinB).__office!.ktvPlay());
-  await expect.poll(async () => (await ktv()).stage, { timeout: 10_000 }).toBe('menu');
-  await page.keyboard.press('ArrowRight');
-  await page.keyboard.press('Space');
-  await expect.poll(async () => (await ktv()).stage, { timeout: 10_000 }).toBe('sing');
-  expect((await ktv()).song).toBe('monday');
-  await page.keyboard.press('Escape');
-  await expect.poll(async () => (await ktv()).me, { timeout: 10_000 }).toBe(false);
-  expect(await page.evaluate(() => (window as unknown as WinB).__office!.fp.on)).toBe(true);
-  expect(errors).toEqual([]);
-});
 
 test('adding a Claude account: a folder of its own, connected to the office, signed in from the card', async ({ page }) => {
   test.setTimeout(420_000);   // (signing in, renaming, picking, then the page once more: ~5 min on a busy machine)
@@ -1264,7 +590,7 @@ test('an image a session reads shows in the feed as a thumbnail, and a click ope
 test('the machine drawer says why it is slow, closes idle sessions in one go and can do it on a timer', async ({ page }) => {
   await page.addInitScript(() => { try { localStorage.setItem('office-quality', 'low'); } catch { /* private mode */ } });
   const errors = watchErrors(page);
-  await page.goto('/?demo&layout=pro');
+  await page.goto('/?demo');
   await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 60_000 });   // (17 s on a Mac deep in swap)
   await page.locator('#btn-mac').evaluate((b: HTMLElement) => b.click());
   const body = page.locator('#mac-body');

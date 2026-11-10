@@ -25,6 +25,7 @@ export default {
   looks: {
     toy: { sub: 'Tròn trịa, bóng bẩy như mô hình đồ chơi' },
     pixar: { sub: 'Mắt to, tóc nhiều lớp như phim hoạt hình' },
+    anime: { sub: 'Mắt anime long lanh, viền mực và tô màu kiểu hoạt hình cho cả văn phòng' },
   },
   lookNote: 'Mọi người trong văn phòng đổi cùng lúc, cả bạn khi Hoá thân.',
   qSub: { auto: 'Tự hạ khi giật', low: 'Nhẹ, đỡ tốn pin', medium: 'Cân bằng', high: 'Sắc nét, bóng mềm' },

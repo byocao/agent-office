@@ -20,3 +20,6 @@ playwright-report/
 /.demo-build/
 /demo-site/
 /out/
+
+# the VN view's art, built from your own copy of the game by scripts/vn-assets.py: never committed
+/public/assets/vn/

@@ -3,14 +3,10 @@ import { state } from '../core/state.js';
 import { $, el, fmtBytes, fmtClock, hhmm, nowMs } from '../core/env.js';
 import { STATUS_LABEL, verb } from './event-text.js';
 import { TYPE_ICON, TYPE_TONE, icon } from './icons.js';
-import { hoverRing, selRing } from '../interact/rings.js';
-import { AGENT_NAME, agentMark, agentOf, colorOf, dn, dnOf, sessions, workers } from '../people/workers.js';
-import { renderLite } from './lite.js';
+import { AGENT_NAME, agentMark, agentOf, colorOf, dn, dnOf, sessions } from '../people/workers.js';
 import { openSession, renderActivity, renderSessionHead, renderSubs, tab, toggleSession } from './session-drawer.js';
 import { macSnap } from './mac-drawer.js';
-import { queuePlace } from '../interact/place-cards.js';
 import { unseenDone } from '../life/your-turn.js';
-import { whereabouts } from '../people/outings.js';
 import { imageUrl, openImage } from './image-view.js';
 import { t as tr, num } from '../../i18n/index.js';
 
@@ -104,8 +100,6 @@ function ago(ts) {
 export function doingOf(s) {
   if (s.status === 'wait') return { ic: 'alert', text: tr('activity.doing.wait') };
   if (s.stuck && s.status !== 'rest') return { ic: 'alert', text: tr(`activity.doing.stuck.${s.stuck.kind}`, { label: s.stuck.label.length > 40 ? `${s.stuck.label.slice(0, 39)}…` : s.stuck.label }), stuck: true };
-  const where = whereabouts(workers.get(s.id));   // out of the office: at the shop, on the way home…
-  if (where) return where;
   if (s.status === 'rest' && s.bg?.length) return { ic: 'terminal', text: `${tr('activity.doing.bg', { desc: s.bg[0].desc })}${s.bg.length > 1 ? ` (+${s.bg.length - 1})` : ''}` };
   if (s.status === 'rest') return { ic: 'zzz', text: nowMs() - (s.lastAt || 0) < 90e3 ? tr('activity.doing.justDone') : tr('activity.doing.resting', { time: ago(s.lastAt) }) };
   if (s.last) return { ic: TYPE_ICON[s.last.type] || 'sparkle', text: cap(verb(s.last)) };
@@ -116,7 +110,7 @@ let uiQueued = false;
 export function queueUi() {
   if (uiQueued) return; uiQueued = true;
   requestAnimationFrame(() => {
-    uiQueued = false; renderRail(); renderHud(); queueFeed(); state.boardDirty = true; queuePlace(); renderLite();
+    uiQueued = false; renderRail(); renderHud(); queueFeed();
     if (state.selectedId) { renderSessionHead(); if (tab === 'subs' && !state.subView) renderSubs(); }
   });
 }
@@ -217,7 +211,6 @@ function renderRail() {
     for (const s of all) chips.append(railRows.get(s.id).c);
   }
   $('empty').hidden = all.length > 0 || !state.connectedOnce;
-  for (const w of workers.values()) w.tagEl.classList.toggle('tag--on', w.id === state.selectedId);
 }
 function onListClick(ev) {
   const g = ev.target.closest('.grp-btn');
@@ -244,28 +237,12 @@ export function renderHud() {
   const yours = waiting + unseenDone.size;
   document.title = yours ? tr('activity.docTitle', { n: yours }) : 'Agent Office';
 }
-export function updateMarkers(t) {
-  const sel = state.selectedId ? workers.get(state.selectedId) : null;
-  selRing.visible = !!sel;
-  if (sel) { selRing.position.set(sel.pos.x, 0.03 + sel.gy(), sel.pos.y); selRing.scale.setScalar(1 + Math.sin(t * 4) * 0.06); }
-  hoverRing.visible = !!state.hovered && state.hovered !== sel && !!state.hovered.root.parent;
-  if (hoverRing.visible) { hoverRing.position.set(state.hovered.pos.x, 0.025 + state.hovered.gy(), state.hovered.pos.y); hoverRing.scale.setScalar(state.hovered.sub ? 0.8 : 1); }
-  for (const w of workers.values()) {
-    const s = sessions.get(w.id);
-    const show = w.root.visible && (!s || s.status !== 'rest' || w.id === state.selectedId || w === state.hovered || w.phase === 'walk');
-    if (w.tagObj.visible !== show) w.tagObj.visible = show;
-    const wait = s?.status === 'wait';
-    if (w.tagEl.classList.contains('tag--wait') !== wait) w.tagEl.classList.toggle('tag--wait', wait);
-  }
-}
-
 export function setup() {
   /* ---------- UI: activity column, session list, chips ---------- */
   state.stats = {};
   state.feed = [];
   state.selectedId = null;
   state.isLocal = false;
-  state.hovered = null; state.hoverAt = 0;
   toastEl = $('toast');
   $('type-chips').addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-k]'); if (!b) return;

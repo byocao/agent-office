@@ -1,8 +1,6 @@
 // The Mac drawer: memory, CPU, dev servers, plan limits, cleanup.
 import { state } from '../core/state.js';
 import { $, GB, el, fmtAgo, fmtBytes, hhmm, pad2, replay, small } from '../core/env.js';
-import { syncDevBoxes } from '../world/props/dev-servers.js';
-import { setLedMood } from '../world/room-update.js';
 import { queueUi, toast } from './activity.js';
 import { closeSession, drM } from './session-drawer.js';
 import { chatMoved } from './group-chat.js';
@@ -25,12 +23,12 @@ export const pollMac = () => { if (document.visibilityState === 'visible') loadM
 // button that no longer exists (the next reading draws it)
 let pressing = false;
 export async function loadMac() {
-  if (DEMO) { macSnap = demoMac(); renderMacButton(); syncDevBoxes(macSnap); if (!drM.hidden && !pressing && !strandedHolding()) renderMac(); return; }
+  if (DEMO) { macSnap = demoMac(); renderMacButton(); if (!drM.hidden && !pressing && !strandedHolding()) renderMac(); return; }
   try {
     const q = new URLSearchParams(TOKEN ? { k: TOKEN } : {}); if (!drM.hidden) q.set('open', '1');   // (open: fresh memory footprints)
     const r = await fetch(`/api/sys${String(q) ? `?${q}` : ''}`);
     macSnap = await r.json();
-    renderMacButton(); syncDevBoxes(macSnap);
+    renderMacButton();
     if (!drM.hidden && !pressing && !strandedHolding()) renderMac();   // (nor while a form is open in "Việc bỏ quên")
   } catch { /* server busy; next poll */ }
 }
@@ -370,7 +368,6 @@ function renderMacButton() {
   $('btn-mac').dataset.level = lv;
   $('mac-mini').replaceChildren(`RAM ${pct}%`, ...(s.mem.swapUsed > GB ? [el('span', 'mp-swap', ` · ${fmtBytes(s.mem.swapUsed)}`)] : []));   // (the swap: dropped on a phone)
   $('ml-ram').style.width = `${pct}%`;
-  setLedMood(lv);
   // one place for the machine: the pill (level, RAM) and its panel; a dot when there is something worth cleaning
   const cpu = s.cpu?.percent ?? 0, tip = (s.tips || []).find((t) => t.action);
   $('mac-tip').hidden = !tip;
@@ -669,6 +666,9 @@ export function renderMac() {
   body.scrollTop = keepScroll;
   if (focusKey) body.querySelector(`[data-fk="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
 }
+
+/** The machine pill in the top bar, from the start (after the demo knows whether it is one). */
+export function startMac() { loadMac(); clearInterval(state.macTimer); state.macTimer = setInterval(pollMac, 30000); }
 
 export function setup() {
   /* ---------- Mac drawer ---------- */
