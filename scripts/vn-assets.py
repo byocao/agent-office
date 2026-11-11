@@ -1,6 +1,6 @@
 """Builds the art for the café (src/office/ui/cafe.js) from a local install of Smash Girls.
 
-    python -I scripts/vn-assets.py "D:/Games/Smash Girls" [public/assets/vn]
+    python -I scripts/vn-assets.py "D:/Games/Smash Girls" [public/assets/vn] [--original]
 
 The art belongs to its studio: it is read from your own copy and written to public/assets/vn/, which git ignores. Do
 not commit or publish it. Taken: the standing portraits, the in-game pixel characters' everyday animations, the
@@ -8,7 +8,9 @@ backgrounds, three battle stages (scripts/vn_stage.py) and the characters' battl
 The standing art's Live2D models are converted for the web too (scripts/vn_live2d.py), and Live2D's Cubism Core for
 Web, the runtime that plays them, is fetched from Live2D's own site into the same folder (Live2D's licence: it is not
 part of this repository either).
-Needs: pip install UnityPy pillow
+The six heroines get colours of their own (scripts/vn_recolor.py: hair and outfits turned to new hues, skin kept);
+--original keeps the game's colours.
+Needs: pip install UnityPy pillow numpy
 """
 import json
 import os
@@ -23,11 +25,15 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vn_live2d  # noqa: E402
 import vn_stage  # noqa: E402
+import vn_recolor  # noqa: E402
 
-if len(sys.argv) < 2:
+if len([a for a in sys.argv[1:] if a != '--original']) < 1:
     sys.exit(__doc__)
-GAME = sys.argv[1]
-OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'vn')
+ORIGINAL = '--original' in sys.argv
+ARGS = [a for a in sys.argv[1:] if a != '--original']
+GAME = ARGS[0]
+OUT = ARGS[1] if len(ARGS) > 1 else os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'vn')
+paint = (lambda im, cid: im) if ORIGINAL else vn_recolor.recolor   # noqa: E731
 BUNDLES = os.path.join(GAME, 'SmashGirls_Data', 'StreamingAssets', 'aa', 'StandaloneWindows64')
 if not os.path.isdir(BUNDLES):
     sys.exit(f'No game data at {BUNDLES}')
@@ -136,7 +142,7 @@ manifest = {'cast': {}, 'shadows': {}, 'places': {}}
 for cid, (src, name, h, (fx, fy, fd)) in CAST.items():
     if src not in found:
         continue
-    im = trimmed(found[src])
+    im = paint(trimmed(found[src]), cid)
     if im.height > 1600:
         im = im.resize((round(im.width * 1600 / im.height), 1600), Image.LANCZOS)
     im.save(os.path.join(OUT, 'cast', f'{cid}.webp'), quality=92, method=6)
@@ -234,6 +240,7 @@ for sid in SPRITES:
     sheet = Image.new('RGBA', (cw * cols, ch * ((len(frames) + cols - 1) // cols)))
     for i, (im, pv) in enumerate(frames):
         sheet.alpha_composite(im, ((i % cols) * cw + 1 + int(round(left - pv[0])), (i // cols) * ch + 1 + int(round(up - pv[1]))))
+    sheet = sheet if ORIGINAL else vn_recolor.recolor(sheet, sid, pixel=True)
     sheet.save(os.path.join(OUT, 'sprites', f'{sid}.png'), optimize=True)
     manifest['sprites'][sid] = {'src': f'sprites/{sid}.png', 'cw': cw, 'ch': ch, 'cols': cols, 'px': int(left) + 1, 'py': int(up) + 1, 'anims': anims}
 
@@ -266,7 +273,7 @@ for (cid, name), f in sorted(voice_bundles.items()):
 manifest['live2d'] = {}
 for cid, f in sorted(l2d.items()):
     print('live2d', cid)
-    if vn_live2d.export(os.path.join(BUNDLES, f), os.path.join(OUT, 'live2d', cid)):
+    if vn_live2d.export(os.path.join(BUNDLES, f), os.path.join(OUT, 'live2d', cid), transform=lambda im, c=cid: paint(im, c)):
         manifest['live2d'][cid] = f'live2d/{cid}/model.model3.json'
 CORE = os.path.join(OUT, 'live2d', 'live2dcubismcore.min.js')
 if manifest['live2d'] and not os.path.exists(CORE):

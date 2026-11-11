@@ -94,7 +94,7 @@ def motion3(clip, names):
             'Curves': curves}
 
 
-def export(bundle_path, out_dir, max_tex=4096):
+def export(bundle_path, out_dir, max_tex=4096, transform=None):
     """Writes model.model3.json, model.moc3, the textures and motions/*.motion3.json to out_dir. Returns the motion names."""
     env = UnityPy.load(bundle_path)
     os.makedirs(os.path.join(out_dir, 'motions'), exist_ok=True)
@@ -126,6 +126,8 @@ def export(bundle_path, out_dir, max_tex=4096):
         im = tx.image
         if im.width > max_tex:
             im = im.resize((max_tex, round(im.height * max_tex / im.width)), Image.LANCZOS)
+        if transform:
+            im = transform(im)
         name = f'texture_{i:02d}.png'
         im.save(os.path.join(out_dir, name), optimize=True)
         tex_files.append(name)
