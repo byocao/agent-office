@@ -4,6 +4,7 @@
 //   npm run build && npm start &              # or `npm run dev`, any running office will do
 //   node scripts/record-gif.mjs               # 20 s of the company floor, 12 frames a second
 //   node scripts/record-gif.mjs --seconds 12 --width 800 --viewport 1440 --url 'http://127.0.0.1:4310/?demo'
+//   node scripts/record-gif.mjs --channel msedge   # an installed Chrome or Edge instead of Playwright's own Chromium
 //
 // Run it on a machine with a real GPU: in a VM or CI the browser falls back to software WebGL and the office drops to
 // a few frames a second. Frames come from Chrome's screencast (one per repaint), are resampled to an even rate, then
@@ -25,7 +26,7 @@ const WARMUP = Number(arg('warmup', 12));   // seconds for the office to load an
 const OUT = path.resolve(arg('out', 'docs/media/demo.gif'));
 const { GIFEncoder, quantize, applyPalette } = gifenc;   // a CommonJS package
 
-const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--hide-scrollbars'] });
+const browser = await chromium.launch({ channel: arg('channel', undefined), args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--hide-scrollbars'] });
 const page = await (await browser.newContext({ viewport: { width: VIEW, height: VIEW_H }, deviceScaleFactor: 1 })).newPage();
 await page.addInitScript(() => { try { localStorage.setItem('office-tips', 'seen'); } catch { /* storage blocked */ } });   // (no first-visit tour in the GIF)
 console.log(`Opening ${URL_} at ${VIEW}×${VIEW_H}, recording at ${WIDTH}×${HEIGHT}…`);

@@ -9,7 +9,11 @@ someone for their visual-novel scene: their Live2D art, what their AI is doing s
 line to write back to it. The art, stages and voices come from your own copy of a game (`scripts/vn-assets.py`), never
 from this repository.
 
-![Agent Office: the company floor with sessions at work](docs/media/demo.gif)
+![Agent Office: six sessions at work on the neon street stage](docs/media/demo.gif)
+
+| Click someone: their scene, what their AI is doing, a line back to it | Another stage: the cathedral |
+| --- | --- |
+| ![A session's visual-novel card: Live2D art, context, cost, its last steps and its last answer](docs/media/card.png) | ![The sessions on the cathedral stage](docs/media/church.png) |
 
 > A community project, not made by or affiliated with Anthropic.
 
@@ -29,6 +33,19 @@ Open <http://localhost:4310>. Just want a look first? Run `npm run dev` and open
 
 `install` backs up `~/.claude/settings.json` first and only adds its own hooks. To remove everything:
 `node bin/cli.mjs uninstall`.
+
+## The art
+
+The characters, their Live2D models, the stages and the voice lines are built on your computer from your own copy of
+the game, into `public/assets/vn/` (git ignores it):
+
+```bash
+pip install UnityPy pillow numpy
+python -I scripts/vn-assets.py "<the game's folder>"            # the six heroines in colours of their own
+python -I scripts/vn-assets.py "<the game's folder>" --original # the game's own colours
+```
+
+Without them the office says how to build them. The colours are set in `scripts/vn_recolor.py`.
 
 ## Commands
 
@@ -53,10 +70,13 @@ Logs are in `data/server.log`. `doctor` also prints how to restart the backgroun
 ## Features
 
 **Watch your sessions**
-- Every session is a person in the office. Subagents walk in, get their task and report back.
-- Desk screens show what each one is doing. A messy desk means uncommitted files; a commit prints a page, a push
-  launches the rocket, a failing CI run turns things red.
-- A timeline and replay of the last hour or day, a weekly recap card, and trophies for milestones.
+- Every session is a character on the stage at a holographic workstation: blue and scrolling while it works, amber
+  with a "!" while it waits for you. Subagents are penguins at their boss's heels.
+- A commit, a push or green tests: the special move, confetti and a cheer from whoever is near. A failure knocks them
+  down and someone comes over. New sessions drop in from the sky; finished ones leap away.
+- Click someone for their visual-novel scene: Live2D art that blinks and talks, context and cost meters, the AI's
+  last steps as they happen, its last answer, and a box to write back to it (a new turn, or between two steps).
+- A timeline and replay of the last hour or day, and a weekly recap card.
 
 **Answer Claude from the office**
 - Permission requests, questions and plans appear as cards (keys Y / N / A).
@@ -76,9 +96,10 @@ Logs are in `data/server.log`. `doctor` also prints how to restart the backgroun
 - Push notifications when Claude answers or needs you.
 
 **Have some fun**
-- Three floor plans, two character styles, city / countryside / beach backdrops, real weather and day and night.
-- A living Vietnamese city outside, a team group chat, games, pool and karaoke for resting sessions.
-- Walk around in first person (WASD, E to interact), photo mode (P) and 15-second clips.
+- Three stages (neon street, cathedral, arcade) with parallax and animated neon, a camera that drifts and shakes.
+- Resting sessions live their own lives: up on a platform, a coffee at the cart, a chat or a sparring match.
+- Battle voice lines when you pick someone, when they win and when they fall (with the sound on), real weather, day
+  and night, and a team group chat.
 - English and Vietnamese (Settings → Display).
 
 ## Privacy
@@ -129,11 +150,10 @@ More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [CONTRIBUTING.md](CONTR
 - Ideas from agents-at-work, cubicle-crew (MIT, dangerous-command patterns) and cc-reaper (Apache-2.0, RAM and CPU
   rules).
 - qrcode.js (MIT); Be Vietnam Pro and JetBrains Mono fonts (SIL OFL).
-- [Simple Icons](https://simpleicons.org) and [Kenney Car Kit](https://kenney.nl/assets/car-kit) (CC0);
-  weather from [Open-Meteo](https://open-meteo.com).
-- Shop and brand names (Circle K, GS25, 7-Eleven, WinMart, Grab, Xanh SM, Shopee, Mixue, Highlands Coffee and others)
-  belong to their owners. Their shops are drawn in code; see `public/assets/brands/README.md`. Agent Office is not
-  affiliated with any of them.
+- [Simple Icons](https://simpleicons.org) (CC0); weather from [Open-Meteo](https://open-meteo.com).
+- Live2D models are played with [pixi-live2d-display](https://github.com/guansss/pixi-live2d-display) (MIT) and
+  Live2D's Cubism Core for Web, which `vn-assets.py` downloads from Live2D under its own licence.
+- The characters, stages and voices belong to the game's studio; they are not part of this repository.
 
 ## License
 

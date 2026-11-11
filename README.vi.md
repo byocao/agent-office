@@ -7,7 +7,11 @@ gõ phím, chờ duyệt thì nhảy kèm dấu "!", commit thì tung chiêu, ng
 đấu tập với người khác). Bấm vào ai để mở cảnh visual novel: Live2D, AI đang làm gì từng bước, câu trả lời gần nhất và ô
 nhắn lại cho nó. Hình, sân khấu và giọng nói lấy từ bản game của chính bạn (`scripts/vn-assets.py`), không nằm trong repo này.
 
-![Agent Office: tầng công ty với các phiên đang làm việc](docs/media/demo.gif)
+![Agent Office: sáu phiên đang làm việc trên sân khấu phố neon](docs/media/demo.gif)
+
+| Bấm vào ai: cảnh của họ, AI đang làm gì, ô nhắn lại | Sân khấu khác: thánh đường |
+| --- | --- |
+| ![Thẻ visual novel của một phiên: Live2D, ngữ cảnh, chi phí, các bước gần nhất và câu trả lời gần nhất](docs/media/card.png) | ![Các phiên trên sân khấu thánh đường](docs/media/church.png) |
 
 > Dự án cộng đồng, không do Anthropic làm hay liên kết.
 
@@ -29,6 +33,19 @@ Mở <http://localhost:4310>. Muốn xem thử trước? Chạy `npm run dev` r�
 `node bin/cli.mjs uninstall`.
 
 Giao diện mặc định là tiếng Anh; đổi sang tiếng Việt ở **Cài đặt → Hiển thị** hoặc đặt `OFFICE_LANG=vi`.
+
+## Hình nhân vật
+
+Nhân vật, model Live2D, sân khấu và giọng nói được dựng ngay trên máy bạn từ bản game của chính bạn, vào
+`public/assets/vn/` (git bỏ qua thư mục này):
+
+```bash
+pip install UnityPy pillow numpy
+python -I scripts/vn-assets.py "<thư mục game>"            # sáu nhân vật nữ với màu riêng
+python -I scripts/vn-assets.py "<thư mục game>" --original # giữ màu gốc của game
+```
+
+Chưa có hình thì văn phòng sẽ chỉ cách dựng. Bảng màu nằm trong `scripts/vn_recolor.py`.
 
 ## Lệnh
 
@@ -53,10 +70,13 @@ Log nằm ở `data/server.log`. `doctor` cũng in lệnh khởi động lại d
 ## Tính năng
 
 **Theo dõi các phiên**
-- Mỗi phiên là một người trong văn phòng. Trợ lý (subagent) đi vào nhận việc rồi quay về báo cáo.
-- Màn hình trên bàn cho thấy phiên đang làm gì. Bàn bừa là còn file chưa commit; commit thì máy in in ra một trang,
-  push thì tên lửa phóng, CI hỏng thì văn phòng chuyển đỏ.
-- Dòng thời gian và xem lại 1 giờ hoặc cả ngày, thẻ tổng kết tuần, tủ cúp theo cột mốc.
+- Mỗi phiên là một nhân vật đứng ở màn hình hologram của mình trên sân khấu: xanh và chạy code khi đang làm, vàng kèm
+  dấu "!" khi chờ bạn duyệt. Trợ lý (subagent) là chim cánh cụt đi theo sếp.
+- Commit, push hay test xanh thì tung chiêu, bắn pháo giấy, người gần đó cổ vũ. Lỗi thì bị ngã và có người chạy lại hỏi.
+  Phiên mới rơi từ trời xuống, phiên xong việc thì nhảy vụt đi.
+- Bấm vào ai để mở cảnh visual novel: Live2D biết chớp mắt và nói, đồng hồ ngữ cảnh và chi phí, các bước AI vừa làm,
+  câu trả lời gần nhất và ô nhắn lại (thành lượt mới, hoặc chen vào giữa hai bước khi đang làm).
+- Dòng thời gian và xem lại 1 giờ hoặc cả ngày, thẻ tổng kết tuần.
 
 **Trả lời Claude ngay trong văn phòng**
 - Yêu cầu quyền, câu hỏi và kế hoạch hiện thành thẻ (phím Y / N / A).
@@ -76,9 +96,11 @@ Log nằm ở `data/server.log`. `doctor` cũng in lệnh khởi động lại d
 - Thông báo đẩy khi Claude trả lời hoặc cần bạn.
 
 **Cho vui**
-- Ba kiểu văn phòng, hai kiểu nhân vật, cảnh thành phố / đồng quê / biển, thời tiết thật, ngày và đêm.
-- Phố phường Việt Nam sống động bên ngoài, nhóm chat công ty, chơi game, bida, karaoke khi phiên đang nghỉ.
-- Đi dạo ở góc nhìn thứ nhất (WASD, E để tương tác), chế độ chụp ảnh (P) và clip 15 giây.
+- Ba sân khấu (phố neon, thánh đường, khu trò chơi) có parallax và đèn neon động, camera trôi chậm và rung khi có
+  chuyện lớn.
+- Phiên đang nghỉ tự sống: nhảy lên bục, ra xe cà phê, tán gẫu hay đấu tập với nhau.
+- Giọng nói trận đấu khi bạn chọn nhân vật, khi thắng và khi ngã (lúc bật âm thanh), thời tiết thật, ngày và đêm, nhóm
+  chat công ty.
 
 ## An toàn
 
@@ -127,11 +149,10 @@ Xem thêm [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) và [CONTRIBUTING.md](CON
 
 - Ý tưởng từ agents-at-work, cubicle-crew (MIT, mẫu lệnh nguy hiểm) và cc-reaper (Apache-2.0, luật RAM và CPU).
 - qrcode.js (MIT); font Be Vietnam Pro và JetBrains Mono (SIL OFL).
-- [Simple Icons](https://simpleicons.org) và [Kenney Car Kit](https://kenney.nl/assets/car-kit) (CC0);
-  thời tiết từ [Open-Meteo](https://open-meteo.com).
-- Tên cửa hàng và thương hiệu (Circle K, GS25, 7-Eleven, WinMart, Grab, Xanh SM, Shopee, Mixue, Highlands Coffee và
-  các hãng khác) thuộc về chủ sở hữu. Cửa hàng được vẽ bằng code; xem `public/assets/brands/README.md`. Agent Office
-  không liên kết với hãng nào.
+- [Simple Icons](https://simpleicons.org) (CC0); thời tiết từ [Open-Meteo](https://open-meteo.com).
+- Live2D chạy bằng [pixi-live2d-display](https://github.com/guansss/pixi-live2d-display) (MIT) và Cubism Core for Web
+  của Live2D, do `vn-assets.py` tải từ Live2D theo giấy phép riêng của họ.
+- Nhân vật, sân khấu và giọng nói thuộc về hãng làm game; chúng không nằm trong repo này.
 
 ## Giấy phép
 

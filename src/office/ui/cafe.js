@@ -737,5 +737,13 @@ export function setup() {
     if (e.key === 'Escape') { if (!logEl.hidden) toggleLog(false); else if (picked) closeCard(); else stageMenu.hidden = true; }
     else if (e.key.toLowerCase() === 'l') toggleLog();
   });
+  // the tests' and the README pictures' hooks (?debug): who is on the stage, open someone's card, another stage
+  if (window.__office) Object.assign(window.__office, { cafe: {
+    get ready() { return !!(art && stage.ready && actors.size); },
+    actors: () => [...actors.values()].map((a) => ({ key: a.key, kind: a.kind, sid: a.sid, x: a.x, y: a.y })),
+    pick: (sid) => { const a = [...actors.values()].find((x) => x.kind === 'main' && x.sid === sid); if (a) pick(a); return !!a; },
+    close: () => closeCard(),
+    stage: (id) => setStage(id),
+  } });
   loadArt();
 }
