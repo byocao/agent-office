@@ -32,6 +32,7 @@ test('the drawer says how long the prompt cache stays warm, and what carrying on
   await expect(page.locator('#stage canvas.cafe-cv')).toBeVisible({ timeout: 120_000 });
   const s = await restingSession(request, `cc-${Date.now() % 1e6}`);
   await s.status(warm(30));
+  await page.click('[data-hud-panel="left"]');   // (the session list slides out over the stage)
   await page.locator('#rail-list .ri', { hasText: s.name }).click();
   await expect(page.locator('#ds-cache')).toHaveText('Prompt cache still warm for ~30 minutes');
   await page.screenshot({ path: path.join(test.info().project.outputDir, 'cup-warm.png') });   // (kept after the run, to look at)
@@ -48,6 +49,7 @@ test('no word from Claude Code (an older version): guessed from the end of the t
   const errors = watchErrors(page);
   const s = await restingSession(request, `cg-${Date.now() % 1e6}`);
   await page.goto('/');
+  await page.click('[data-hud-panel="left"]', { timeout: 120_000 });
   await page.locator('#rail-list .ri', { hasText: s.name }).click({ timeout: 120_000 });
   // (an API key's five minutes, or a subscription's hour once the office has heard of plan limits, as it has when
   // what-eats-your-plan's spec ran first on the same office)

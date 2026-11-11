@@ -51,6 +51,7 @@ test('panels open and close', async ({ page }) => {
   await expect(page.locator('#dr-mac')).toBeVisible();
   await page.click('#dr-mac [data-close]');
   await expect(page.locator('#dr-mac')).toBeHidden();
+  await page.click('[data-hud-panel="right"]');   // (the activity log slides out over the stage)
   await page.click('#tl-open');
   await expect(page.locator('#tl')).toBeVisible();
   await page.click('#tl-close');
@@ -69,6 +70,7 @@ test('a session opens its drawer from the list', async ({ page }) => {
   await page.goto('/?demo');
   const row = page.locator('#rail-list .ri').first();
   await expect(row).toBeVisible({ timeout: 20_000 });
+  await page.click('[data-hud-panel="left"]');   // (the session list slides out over the stage)
   await row.click();
   await expect(page.locator('#dr-session')).toBeVisible();
   await page.click('#tab-subs');
@@ -91,6 +93,7 @@ test('the weekly recap draws its card', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/?demo');
   await expect(page.locator('#rail-list .ri').first()).toBeVisible({ timeout: 20_000 });
+  await page.click('[data-hud-panel="right"]');
   await page.click('#wrap-open');
   await expect(page.locator('#wrap-modal')).toBeVisible();
   await expect(page.locator('#wrap-note')).not.toContainText('Adding up');
@@ -535,6 +538,7 @@ test('an open conversation moves to another account: stopped while it rests, sta
   await page.goto('/');
   const row = page.locator('#rail-list .ri', { hasText: 'e2e-move' });
   await expect(row).toBeVisible({ timeout: 60_000 });
+  await page.click('[data-hud-panel="left"]');
   await row.click();
   const acts = page.locator('#ds-actions'), change = acts.getByRole('button', { name: 'Change account' });
   await expect(change).toBeVisible({ timeout: 30_000 });

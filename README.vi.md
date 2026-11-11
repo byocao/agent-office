@@ -70,6 +70,9 @@ Log nằm ở `data/server.log`. `doctor` cũng in lệnh khởi động lại d
 ## Tính năng
 
 **Theo dõi các phiên**
+- Sân khấu chiếm cả cửa sổ, phủ một lớp HUD kiểu game: thẻ nhân vật cho từng phiên dọc phía dưới (gương mặt, % ngữ cảnh
+  làm con số lớn, đang làm gì) và các nước đi mới nhất chạy dọc bên phải. Danh sách phiên và nhật ký hoạt động chỉ trượt
+  ra khi bạn cần.
 - Mỗi phiên là một nhân vật đứng ở màn hình hologram của mình trên sân khấu: xanh và chạy code khi đang làm, vàng kèm
   dấu "!" khi chờ bạn duyệt. Trợ lý (subagent) là chim cánh cụt đi theo sếp.
 - Commit, push hay test xanh thì tung chiêu, bắn pháo giấy, người gần đó cổ vũ. Lỗi thì bị ngã và có người chạy lại hỏi.

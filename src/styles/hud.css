@@ -1,0 +1,115 @@
+/* The game-style HUD (src/office/ui/hud.js) on a computer's screen: the stage takes the whole window; the top bar, the
+   session cards, the move feed and the stage's sign sit over it; the session list and the activity log slide in on
+   demand. A phone keeps its own layout (phone.css). Parallelograms, a heavy italic face, white rims and pink plates,
+   the way the game draws its own screens. */
+:root { --hud-pink: #E5287F; --hud-pink-2: #FF5FA8; --hud-dark: rgba(12, 7, 22, .9); --hud-green: #7CFF4F; --hud-amber: #FFB020; --hud-grey: #C3C8D4; --hud-top: 60px; }
+
+/* ---------- the stage takes the window ---------- */
+html:not(.is-phone) #app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "stage"; }
+html:not(.is-phone) .stage-wrap { grid-area: stage; }
+
+/* ---------- the top bar: over the stage, its brand a pink plate, its buttons round ---------- */
+html:not(.is-phone) .topbar { grid-area: auto; position: absolute; inset: 0 0 auto 0; height: var(--hud-top); padding: 0 16px; background: linear-gradient(to bottom, rgba(6, 3, 14, .72), rgba(6, 3, 14, 0)); border: 0; z-index: 20; pointer-events: none; }
+html:not(.is-phone) .topbar > * { pointer-events: auto; }
+html:not(.is-phone) .tb-brand { gap: 0; font: italic 900 1.05rem/1 var(--font); letter-spacing: .04em; text-transform: uppercase; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .45)); }
+html:not(.is-phone) .tb-brand > span:nth-child(2) { padding: 9px 30px 9px 10px; margin-left: -6px; background: linear-gradient(100deg, var(--hud-pink), var(--hud-pink-2)); clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%); color: #fff; }
+html:not(.is-phone) .tb-brand .logo { width: 38px; height: 38px; border-radius: 50%; background: #fff; color: var(--hud-pink); position: relative; z-index: 1; box-shadow: 0 0 0 3px var(--hud-pink); }
+html:not(.is-phone) .tb-brand .logo svg { width: 22px; height: 22px; }
+html:not(.is-phone) .tb-clock { margin-left: -6px; padding: 9px 22px 9px 16px; background: rgba(12, 7, 22, .88); clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); font: italic 800 .9rem/1 var(--mono); color: #fff; letter-spacing: .02em; }
+html:not(.is-phone) .tb-brand .demo-chip { margin-left: 8px; font-style: normal; letter-spacing: .02em; border-radius: 4px; transform: skewX(-10deg); }
+html:not(.is-phone) .tb-actions { gap: 10px; }
+html:not(.is-phone) .tb-btn { height: 40px; min-width: 40px; padding: 0 14px; border-radius: 20px; background: rgba(12, 7, 22, .82); border: 0; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 4px 12px rgba(0, 0, 0, .4); font: italic 800 .78rem/1 var(--font); letter-spacing: .02em; }
+html:not(.is-phone) .tb-btn:hover { background: var(--hud-pink); border: 0; }
+html:not(.is-phone) .tb-btn[aria-pressed="true"], html:not(.is-phone) .tb-btn[aria-expanded="true"] { background: var(--hud-pink); box-shadow: 0 0 0 2px #fff, 0 0 16px rgba(255, 95, 168, .6); }
+html:not(.is-phone) .tb-btn:not(.mac-pill) { width: 40px; padding: 0; justify-content: center; }
+html:not(.is-phone) .tb-btn:not(.mac-pill) .lbl { display: none; }
+html:not(.is-phone) .mac-pill { border-radius: 0; clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); box-shadow: none; padding: 0 22px; background: rgba(12, 7, 22, .86); }
+
+/* ---------- the stage's own controls and its sign, under the bar ---------- */
+html:not(.is-phone) .cafe-top { top: calc(var(--hud-top) + 6px); }
+html:not(.is-phone) .cafe-places { top: calc(var(--hud-top) + 52px); }
+html:not(.is-phone) .cafe-btn[aria-pressed="true"] { background: #fff; color: var(--hud-pink); }
+/* the stage's name, the way the game writes "Level 1-2": big white italic, a dark rim, no box */
+.cafe-sign { background: none !important; box-shadow: none !important; padding: 0 !important; gap: 4px !important; }
+html:not(.is-phone) .cafe-sign { top: calc(var(--hud-top) + 6px); right: 20px; }
+.cafe-sign b { font: italic 900 1.9rem/1 var(--font) !important; letter-spacing: .01em !important; color: #fff !important; -webkit-text-stroke: 1.5px #1A0E26; paint-order: stroke fill; text-shadow: 0 3px 0 #1A0E26, 0 0 18px rgba(255, 95, 168, .55) !important; }
+.cafe-sign small { font: italic 700 .82rem/1.2 var(--font) !important; color: #fff !important; text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+
+/* ---------- the session list and the activity log: slid out over the stage ---------- */
+html:not(.is-phone) .side-left, html:not(.is-phone) .side-right { grid-area: auto; position: absolute; top: var(--hud-top); bottom: 12px; width: min(360px, 86vw); z-index: 19; background: rgba(12, 7, 22, .94); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 0; box-shadow: 0 20px 50px rgba(0, 0, 0, .55); transition: transform .28s cubic-bezier(.2, .8, .2, 1), opacity .2s; opacity: 0; pointer-events: none; }
+html:not(.is-phone) .side-left { left: 12px; transform: translateX(-30px); border-left: 4px solid var(--hud-pink); }
+html:not(.is-phone) .side-right { right: 12px; transform: translateX(30px); border-right: 4px solid var(--hud-pink); }
+html:not(.is-phone) body.hud-left-open .side-left, html:not(.is-phone) body.hud-right-open .side-right { transform: none; opacity: 1; pointer-events: auto; }
+html:not(.is-phone) .side h2, html:not(.is-phone) .act-title { font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
+
+/* ---------- the fighter cards: one for each session, along the bottom ---------- */
+.hud-cards { position: absolute; left: 0; right: 0; bottom: 12px; z-index: 3; display: flex; justify-content: safe center; gap: 14px; padding: 26px 18px 4px; overflow-x: auto; scrollbar-width: none; transition: opacity .25s, transform .25s; }
+.hud-cards::-webkit-scrollbar { display: none; }
+html.is-phone .hud-cards, html.is-phone .hud-feed { display: none; }
+.hud-card { all: unset; position: relative; flex: none; width: 206px; height: 76px; cursor: pointer; color: #fff; font-family: var(--font); transition: transform .15s; }
+.hud-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, rgba(14, 8, 26, .94), rgba(36, 18, 52, .9)); clip-path: polygon(16px 0, 100% 0, calc(100% - 16px) 100%, 0 100%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .85); }
+.hud-card::after { content: ''; position: absolute; left: 16px; top: 0; width: 46px; height: 3px; background: var(--st, var(--hud-grey)); }
+.hud-card:hover { transform: translateY(-4px); }
+.hud-card:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.hud-face { position: absolute; left: 4px; bottom: 0; width: 70px; height: 92px; background: center 12% / cover no-repeat; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); -webkit-mask-image: linear-gradient(to top, transparent 0, #000 18%); mask-image: linear-gradient(to top, transparent 0, #000 18%); border-radius: 46% 46% 8px 8px; }
+.hud-num { position: absolute; left: 78px; top: 4px; display: flex; align-items: baseline; gap: 1px; font: italic 900 1.95rem/1 var(--font); letter-spacing: -.02em; color: var(--st, var(--hud-grey)); -webkit-text-stroke: 1.5px #120A1E; paint-order: stroke fill; text-shadow: 0 2px 0 #120A1E; }
+.hud-num i { font-size: 1.05rem; }
+.hud-lbl { position: absolute; left: 74px; top: -15px; padding: 3px 12px 3px 8px; background: #120A1E; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); font: italic 800 .58rem/1 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--st, var(--hud-grey)); box-shadow: inset 0 -2px 0 var(--st, var(--hud-grey)); }
+.hud-name { position: absolute; left: 78px; right: 18px; bottom: 22px; font: italic 800 .8rem/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-doing { position: absolute; left: 78px; right: 22px; bottom: 8px; display: flex; align-items: center; gap: 4px; font: 500 .66rem/1.1 var(--font); color: rgba(255, 255, 255, .7); white-space: nowrap; overflow: hidden; }
+.hud-doing .ic { width: 11px; height: 11px; flex: none; }
+.hud-bar { position: absolute; left: 6px; right: 22px; bottom: 0; height: 3px; background: rgba(255, 255, 255, .12); clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%); }
+.hud-bar i { display: block; height: 100%; background: var(--st, var(--hud-grey)); transition: width .6s ease; }
+.hud-badge { position: absolute; right: 10px; top: -14px; width: 26px; height: 26px; border-radius: 50%; display: none; place-items: center; background: var(--hud-amber); color: #2A1600; font: 900 1rem/1 var(--font); box-shadow: 0 0 0 2px #fff, 0 0 14px var(--hud-amber); animation: hud-bob .7s ease-in-out infinite alternate; }
+.hud-card[data-st="work"] { --st: var(--hud-green); }
+.hud-card[data-st="wait"] { --st: var(--hud-amber); }
+.hud-card[data-st="wait"] .hud-badge { display: grid; }
+.hud-card[data-st="wait"]::before { box-shadow: inset 0 0 0 2px var(--hud-amber), inset 0 0 22px rgba(255, 176, 32, .35); }
+.hud-card[data-st="rest"] { opacity: .78; }
+.hud-card[data-st="rest"] .hud-face { filter: grayscale(.45) drop-shadow(0 2px 4px rgba(0, 0, 0, .6)); }
+.hud-card[data-hot="true"] .hud-bar i { background: linear-gradient(to right, var(--hud-amber), #FF4A5A); }
+@keyframes hud-bob { to { transform: translateY(-4px); } }
+
+/* ---------- the move feed: the latest moves down the right, each gone after a while ---------- */
+.hud-feed { position: absolute; right: 14px; top: calc(var(--hud-top) + 70px); z-index: 3; width: min(380px, 42%); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; pointer-events: none; transition: opacity .25s; }
+.hud-ev { all: unset; pointer-events: auto; cursor: pointer; max-width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 7px; padding: 5px 18px 5px 8px; background: linear-gradient(100deg, rgba(12, 7, 22, .9), rgba(30, 16, 44, .82)); clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); border-right: 3px solid var(--ev, #9AA4B2); font: 500 .74rem/1.2 var(--font); color: #fff; animation: hud-in .35s cubic-bezier(.2, .8, .2, 1); transition: opacity .5s, transform .5s; }
+.hud-ev.is-out { opacity: 0; transform: translateX(16px); }
+.hud-ev b { font: italic 800 .74rem/1 var(--font); color: var(--hud-pink-2); white-space: nowrap; }
+.hud-ev span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-ev .ic { width: 12px; height: 12px; flex: none; color: var(--ev, #C3C8D4); }
+.hud-ev-face { flex: none; width: 22px; height: 22px; border-radius: 50%; background: #3A3048 center / cover no-repeat; box-shadow: 0 0 0 1.5px #fff; }
+.hud-ev--good { --ev: var(--hud-green); }
+.hud-ev--bad { --ev: #FF5A5A; }
+.hud-ev--wait { --ev: var(--hud-amber); }
+@keyframes hud-in { from { opacity: 0; transform: translateX(30px); } }
+
+/* ---------- while someone's scene is open the HUD steps aside ---------- */
+.stage-wrap:has(.cafe-card:not([hidden])) .hud-cards, .stage-wrap:has(.cafe-card:not([hidden])) .hud-feed { opacity: 0; pointer-events: none; transform: translateY(16px); }
+.stage-wrap:has(.cafe-card:not([hidden])) .hud-feed { transform: none; }
+
+/* ---------- the panels that open over it take the game's colours: a deep violet, pink plates ---------- */
+html:not(.is-phone) .drawer, html:not(.is-phone) .side, html:not(.is-phone) .pop, html:not(.is-phone) .tl, html:not(.is-phone) .rp-bar {
+  --side: rgba(14, 8, 26, .97); --card: #1C1230; --card-2: #261843; --card-3: #321F57; --line: rgba(255, 255, 255, .08); --line-2: rgba(255, 255, 255, .16);
+  --accent: var(--hud-pink); --accent-hi: var(--hud-pink-2); --accent-soft: rgba(229, 40, 127, .18); --accent-line: rgba(255, 95, 168, .55); }
+html:not(.is-phone) .drawer { background: rgba(14, 8, 26, .97); border-left: 4px solid var(--hud-pink); }
+html:not(.is-phone) .dr-head { background: linear-gradient(100deg, rgba(229, 40, 127, .28), transparent 70%); }
+html:not(.is-phone) .dr-title h2 { font-style: italic; font-weight: 900; letter-spacing: .01em; }
+html:not(.is-phone) .drawer .btn, html:not(.is-phone) .side .btn { border-radius: 0; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); font-style: italic; font-weight: 800; }
+body:has(.cafe-card:not([hidden])) .zc-peek { display: none; }
+html:not(.is-phone) body:has(.cafe-card:not([hidden])) .toast { bottom: auto; top: calc(var(--hud-top) + 8px); }
+
+/* ---------- the rest moves out of their way ---------- */
+html:not(.is-phone) .zc-peek { top: auto; bottom: 124px; }
+html:not(.is-phone) .perm-stack { top: calc(var(--hud-top) + 6px); }
+html:not(.is-phone) .toast, html:not(.is-phone) .incident { bottom: 118px; }
+html:not(.is-phone) .rp-bar { bottom: 112px; }
+html:not(.is-phone) .tl { top: calc(var(--hud-top) + 10px); }
+html:not(.is-phone) .drawer { top: var(--hud-top); z-index: 21; }
+.incident { border-radius: 0 !important; clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%); font-style: italic; padding: 9px 26px !important; }
+
+@media (max-width: 1000px) {
+  .hud-card { width: 178px; }
+  .hud-feed { width: min(300px, 46%); }
+  .cafe-sign b { font-size: 1.5rem !important; }
+}
+@media (prefers-reduced-motion: reduce) { .hud-badge, .hud-ev { animation: none; } .hud-card, .hud-cards, .side { transition: none; } }

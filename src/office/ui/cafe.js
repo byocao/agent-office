@@ -579,6 +579,12 @@ function paintCard(fresh = false) {
   cardEl.querySelector('[data-cafe="swap"]').hidden = sub;
   if (s && !sub && !s.lastReply && fresh) loadReply(s.id);
 }
+/** Opens a session's scene (its card), as a click on them would; false when they are not on the stage. */
+export function pickSession(id) {
+  const a = [...actors.values()].find((x) => x.kind === 'main' && x.sid === id && !x.gone);
+  if (a) pick(a);
+  return !!a;
+}
 function closeCard() { picked = null; cardEl.hidden = true; doll?.stop(); doll = null; }
 // a line to the session's AI from the card: into its conversation (a new turn), or, while it works, between two steps
 async function sendTo(a, text) {
@@ -741,7 +747,7 @@ export function setup() {
   if (window.__office) Object.assign(window.__office, { cafe: {
     get ready() { return !!(art && stage.ready && actors.size); },
     actors: () => [...actors.values()].map((a) => ({ key: a.key, kind: a.kind, sid: a.sid, x: a.x, y: a.y })),
-    pick: (sid) => { const a = [...actors.values()].find((x) => x.kind === 'main' && x.sid === sid); if (a) pick(a); return !!a; },
+    pick: (sid) => pickSession(sid),
     close: () => closeCard(),
     stage: (id) => setStage(id),
   } });

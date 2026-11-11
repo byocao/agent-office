@@ -10,6 +10,7 @@ import * as lifeWeather from './life/weather.js';
 import * as uiCafe from './ui/cafe.js';
 import * as uiActivity from './ui/activity.js';
 import * as uiSessionDrawer from './ui/session-drawer.js';
+import * as uiHud from './ui/hud.js';
 import * as uiMacDrawer from './ui/mac-drawer.js';
 import * as uiBurn from './ui/burn.js';
 import * as uiTopbar from './ui/topbar.js';
@@ -41,6 +42,7 @@ const MODULES = [
   uiCafe,
   uiActivity,
   uiSessionDrawer,
+  uiHud,
   uiMacDrawer,
   uiBurn,
   uiTopbar,

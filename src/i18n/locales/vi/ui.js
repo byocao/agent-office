@@ -104,6 +104,10 @@ export default {
     walkIn: 'Hoá thân',
     walkInTitle: 'Hoá thân: đi trong văn phòng bằng góc nhìn thứ nhất',
   },
+  hud: {
+    cards: 'Các phiên', sessions: 'Danh sách phiên', activity: 'Nhật ký hoạt động', ctx: 'Ngữ cảnh',
+    st: { work: 'Đang làm', wait: 'Chờ duyệt', rest: 'Đang nghỉ' },
+  },
   cafe: {
     stage: { street: 'Phố neon', church: 'Thánh đường', arcade: 'Khu trò chơi' },
     ctx: 'Ngữ cảnh', cost: 'Chi phí', onIt: 'Đang làm', restFor: 'Nghỉ được', did: 'Đã làm',

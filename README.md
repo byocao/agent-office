@@ -70,6 +70,9 @@ Logs are in `data/server.log`. `doctor` also prints how to restart the backgroun
 ## Features
 
 **Watch your sessions**
+- The stage fills the window, with a game HUD over it: a fighter card for each session along the bottom (its face,
+  how full its context is as the big number, what it is doing) and the latest moves down the right. The session list
+  and the activity log slide out when you want them.
 - Every session is a character on the stage at a holographic workstation: blue and scrolling while it works, amber
   with a "!" while it waits for you. Subagents are penguins at their boss's heels.
 - A commit, a push or green tests: the special move, confetti and a cheer from whoever is near. A failure knocks them

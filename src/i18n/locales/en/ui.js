@@ -104,6 +104,10 @@ export default {
     walkIn: 'Walk in',
     walkInTitle: 'Walk in: explore the office in first person',
   },
+  hud: {
+    cards: 'Sessions', sessions: 'Session list', activity: 'Activity log', ctx: 'Context',
+    st: { work: 'Working', wait: 'Waiting', rest: 'Resting' },
+  },
   cafe: {
     stage: { street: 'Neon street', church: 'Cathedral', arcade: 'Arcade' },
     ctx: 'Context', cost: 'Cost', onIt: 'On it for', restFor: 'Resting for', did: 'Done',
