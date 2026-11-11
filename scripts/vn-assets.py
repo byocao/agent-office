@@ -3,7 +3,8 @@
     python -I scripts/vn-assets.py "D:/Games/Smash Girls" [public/assets/vn]
 
 The art belongs to its studio: it is read from your own copy and written to public/assets/vn/, which git ignores. Do
-not commit or publish it. Only the standing portraits, the in-game pixel characters' everyday animations and the backgrounds are taken.
+not commit or publish it. Taken: the standing portraits, the in-game pixel characters' everyday animations, the
+backgrounds, three battle stages (scripts/vn_stage.py) and the characters' battle voice lines (no story voices).
 The standing art's Live2D models are converted for the web too (scripts/vn_live2d.py), and Live2D's Cubism Core for
 Web, the runtime that plays them, is fetched from Live2D's own site into the same folder (Live2D's licence: it is not
 part of this repository either).
@@ -21,6 +22,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vn_live2d  # noqa: E402
+import vn_stage  # noqa: E402
 
 if len(sys.argv) < 2:
     sys.exit(__doc__)
@@ -75,10 +77,29 @@ found = {}   # name -> PIL image
 moves = {}   # (sprite id, move) -> bundle file
 l2d = {}     # cast id -> its Live2D model's bundle file
 L2D_NAME = {cid: src.replace('LevelCharacter_', '') for cid, (src, *_rest) in CAST.items()}
+# the battle stages, as layers to draw with parallax
+STAGES = {'street': 'Street_Stage', 'church': 'Church_Stage', 'arcade': 'Arcade_Stage'}
+stage_bundles = {}
+# battle voice lines (Japanese) the café plays: picked up, ready, a win, a loss, effort, a hit
+VOICE_KINDS = ('Selection', 'Ready', 'BattleStart', 'Victory', 'Defeat', 'Force', 'Damage', 'SmashGirls', 'Studio')
+voice_bundles = {}   # (cast id, file name) -> bundle
 print('reading the game data (about a minute)...')
 for f in sorted(os.listdir(BUNDLES)):
     env = UnityPy.load(os.path.join(BUNDLES, f))
     for path, obj in env.container.items():
+        sm = re.search(r'/Prefab/Smash/Stage/Stage/(\w+)\.prefab$', path)
+        if sm:
+            for sid, game in STAGES.items():
+                if game == sm.group(1):
+                    stage_bundles[sid] = f
+            continue
+        vm = re.search(r'/VoiceClip/jp/Battle/(\w+)/\1_Voice_(\w+?)(?:_(\d+))?\.wav$', path)
+        if vm:
+            if vm.group(2) in VOICE_KINDS:
+                for cid, game in L2D_NAME.items():
+                    if game == vm.group(1):
+                        voice_bundles[(cid, f'{vm.group(2)}{vm.group(3) or ""}')] = f
+            continue
         lm = re.search(r'/Live2D/Battle/Intro/(\w+)Live2D\.prefab$', path)
         if lm:
             for cid, game in L2D_NAME.items():
@@ -216,6 +237,31 @@ for sid in SPRITES:
     sheet.save(os.path.join(OUT, 'sprites', f'{sid}.png'), optimize=True)
     manifest['sprites'][sid] = {'src': f'sprites/{sid}.png', 'cw': cw, 'ch': ch, 'cols': cols, 'px': int(left) + 1, 'py': int(up) + 1, 'anims': anims}
 
+# the stages
+manifest['stages'] = {}
+for sid, f in stage_bundles.items():
+    st = vn_stage.export(os.path.join(BUNDLES, f), os.path.join(OUT, 'stages', sid), sid)
+    if st and st['ground']:
+        manifest['stages'][sid] = f'stages/{sid}/stage.json'
+# the voice lines: { cast id: { kind: [files] } }
+manifest['voices'] = {}
+for (cid, name), f in sorted(voice_bundles.items()):
+    env = UnityPy.load(os.path.join(BUNDLES, f))
+    for o in env.objects:
+        if o.type.name != 'AudioClip':
+            continue
+        try:
+            data = next(iter(o.read().samples.values()))
+        except Exception as err:   # (no decoder for it here)
+            print('voice', cid, name, err)
+            break
+        os.makedirs(os.path.join(OUT, 'voice', cid), exist_ok=True)
+        with open(os.path.join(OUT, 'voice', cid, f'{name}.wav'), 'wb') as fh:
+            fh.write(data)
+        kind = re.sub(r'\d+$', '', name)
+        manifest['voices'].setdefault(cid, {}).setdefault(kind, []).append(f'voice/{cid}/{name}.wav')
+        break
+
 # the standing art as Live2D, and the runtime that plays it
 manifest['live2d'] = {}
 for cid, f in sorted(l2d.items()):
@@ -231,4 +277,4 @@ if manifest['live2d'] and not os.path.exists(CORE):
 
 with open(os.path.join(OUT, 'manifest.json'), 'w', encoding='utf-8') as fh:
     json.dump(manifest, fh, indent=1)
-print(f"wrote {len(manifest['cast'])} portraits, {len(manifest['live2d'])} Live2D models, {len(manifest['sprites'])} pixel characters, {len(manifest['shadows'])} silhouettes, {len(manifest['places'])} places to {os.path.abspath(OUT)}")
+print(f"wrote {len(manifest['cast'])} portraits, {len(manifest['live2d'])} Live2D models, {len(manifest['stages'])} stages, {sum(len(v) for x in manifest['voices'].values() for v in x.values())} voice lines, {len(manifest['sprites'])} pixel characters, {len(manifest['shadows'])} silhouettes, {len(manifest['places'])} places to {os.path.abspath(OUT)}")

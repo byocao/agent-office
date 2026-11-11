@@ -2,9 +2,10 @@
 
 [English](README.md) · Tiếng Việt
 
-Quán cà phê pixel nhìn ngang cho các phiên Claude Code. Mỗi phiên là một nhân vật pixel có bàn bên cửa sổ: đang làm thì
-gõ phím, chờ duyệt thì nhảy tưng tưng, commit thì ăn mừng, nghỉ thì ra quầy. Bấm vào ai để xem chân dung và AI đang làm
-gì. Nhân vật lấy từ bản game của chính bạn (`scripts/vn-assets.py`), không nằm trong repo này.
+Các phiên Claude Code thành nhân vật trên sân khấu pixel nhìn ngang. Mỗi phiên có một màn hình hologram: đang làm thì
+gõ phím, chờ duyệt thì nhảy kèm dấu "!", commit thì tung chiêu, nghỉ thì tự sống (nhảy lên bục, ra xe cà phê, tán gẫu hay
+đấu tập với người khác). Bấm vào ai để mở cảnh visual novel: Live2D, AI đang làm gì từng bước, câu trả lời gần nhất và ô
+nhắn lại cho nó. Hình, sân khấu và giọng nói lấy từ bản game của chính bạn (`scripts/vn-assets.py`), không nằm trong repo này.
 
 ![Agent Office: tầng công ty với các phiên đang làm việc](docs/media/demo.gif)
 

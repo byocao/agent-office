@@ -2,10 +2,12 @@
 
 English · [Tiếng Việt](README.vi.md)
 
-A pixel café for your Claude Code sessions, seen side on. Each session is a pixel character with a desk by the window:
-it types while it works, hops when it waits for you, celebrates a commit and wanders to the counter when it rests.
-Click someone for their portrait and what their AI is doing. The characters come from your own copy of a game
-(`scripts/vn-assets.py`), never from this repository.
+Your Claude Code sessions as characters on a side-view pixel stage. Each session has a holographic workstation: it
+types while it works, hops with a "!" when it waits for you, does its special move on a commit and, while it rests,
+lives a life of its own (up on a platform, a coffee at the cart, a chat or a sparring match with someone else). Click
+someone for their visual-novel scene: their Live2D art, what their AI is doing step by step, what it last said, and a
+line to write back to it. The art, stages and voices come from your own copy of a game (`scripts/vn-assets.py`), never
+from this repository.
 
 ![Agent Office: the company floor with sessions at work](docs/media/demo.gif)
 

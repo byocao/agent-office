@@ -105,8 +105,12 @@ export default {
     walkInTitle: 'Hoá thân: đi trong văn phòng bằng góc nhìn thứ nhất',
   },
   cafe: {
+    stage: { street: 'Phố neon', church: 'Thánh đường', arcade: 'Khu trò chơi' },
+    ctx: 'Ngữ cảnh', cost: 'Chi phí', onIt: 'Đang làm', restFor: 'Nghỉ được', did: 'Đã làm',
+    replyTo: 'Nhắn cho {name}…', send: 'Gửi', sent: 'Đã gửi cho {name} ✉️', sentDemo: 'Bản demo: tin nhắn tới {name} không được gửi đi',
+    cantSend: 'Không tìm thấy cuộc trò chuyện của {name} để gửi',
     label: 'Văn phòng Claude Café, nhìn ngang',
-    viewTitle: 'Đổi khung cảnh', log: 'Nhật ký', fullscreen: 'Toàn màn hình', close: 'Đóng',
+    viewTitle: 'Đổi sân khấu', log: 'Nhật ký', fullscreen: 'Toàn màn hình', close: 'Đóng',
     approve: 'Duyệt ngay', open: 'Mở phiên', swap: 'Đổi nhân vật',
     helper: 'Trợ lý', helperOf: 'trợ lý của {name}',
     hello: 'Chào cả nhà! Mình lo phần {proj} ✨', waiting: 'Chờ bạn duyệt nè!', coffee: 'Cà phê đây ☕',

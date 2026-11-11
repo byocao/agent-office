@@ -1,6 +1,6 @@
-/* The pixel café (src/office/ui/cafe.js): the only view. Its canvas fills the stage; the 3D canvas, its labels and
-   camera controls are out of the way for good. */
-.cafe { --pink: #E5287F; --pink-2: #FF5FA8; --amber: #FFB020; position: absolute; inset: 0; z-index: 1; overflow: hidden; background: #2A1E22; color: #fff; font-family: var(--font); container-type: size; }
+/* The stage (src/office/ui/cafe.js): the only view. Its canvas fills the middle of the page; a click on someone opens
+   their visual-novel scene over it. */
+.cafe { --pink: #E5287F; --pink-2: #FF5FA8; --amber: #FFB020; position: absolute; inset: 0; z-index: 1; overflow: hidden; background: #14101E; color: #fff; font-family: var(--font); container-type: size; }
 .is-cafe #stage > canvas:not(.cafe-cv), .is-cafe #stage .labels, .is-cafe #chips, .is-cafe .toolbar, .is-cafe #empty, .is-cafe #lite,
 .is-cafe #place-card, .is-cafe .place-card, .is-cafe #fp-hud { display: none !important; }
 .cafe-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; touch-action: manipulation; }
@@ -24,8 +24,12 @@
 .cafe-empty { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 3; margin: 0; padding: 12px 20px; border-radius: 12px; background: rgba(20, 14, 30, .8); font: 600 .95rem/1.4 var(--font); text-align: center; pointer-events: none; }
 
 /* a click on someone: their portrait and what their AI is doing */
-.cafe-card { position: absolute; inset: auto 0 0 0; z-index: 6; height: 100%; pointer-events: none; background: linear-gradient(to right, rgba(12, 6, 22, .5), rgba(12, 6, 22, .2) 70%); animation: cafe-dim .35s ease; }
+.cafe-card { position: absolute; inset: 0; z-index: 6; pointer-events: none; animation: cafe-dim .4s ease; }
 @keyframes cafe-dim { from { opacity: 0; } }
+/* the painted background of the scene (the office while they work, the café while they rest), slowly drifting */
+.cafe-vnbg { position: absolute; inset: -3%; background: #14101E center / cover no-repeat; pointer-events: auto; cursor: pointer; animation: cafe-drift 40s ease-in-out infinite alternate; }
+.cafe-vnbg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, rgba(10, 4, 20, .15), rgba(10, 4, 20, .05) 45%, rgba(10, 4, 20, .5)), linear-gradient(to top, rgba(10, 4, 20, .55), transparent 45%); }
+@keyframes cafe-drift { from { transform: scale(1.02) translateX(-1%); } to { transform: scale(1.05) translateX(1%); } }
 .cafe-portrait { position: absolute; left: 0; bottom: 0; height: 100%; width: 50%; display: flex; align-items: flex-end; justify-content: flex-start; opacity: 0; transform: translateX(-30px); pointer-events: none;
   -webkit-mask-image: linear-gradient(to top, transparent 0, #000 16%); mask-image: linear-gradient(to top, transparent 0, #000 16%); }
 .cafe-portrait.is-in { animation: cafe-in .45s cubic-bezier(.2, .8, .2, 1) forwards; }
@@ -35,21 +39,49 @@
 .cafe-portrait[data-kind="live2d"] canvas { display: block; width: 100%; height: 100%; filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .45)); }
 .cafe-portrait[data-kind="pixel"] canvas { height: 46%; image-rendering: pixelated; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .5)); animation: cafe-bob 1.6s ease-in-out infinite alternate; }
 @keyframes cafe-bob { to { transform: translateY(-2%); } }
-.cafe-box { position: absolute; right: 2.5%; bottom: 4%; width: min(640px, 58%); box-sizing: border-box; padding: 30px 26px 16px; pointer-events: auto; isolation: isolate; animation: cafe-up .3s ease; }
+.cafe-box { position: absolute; right: 2.5%; bottom: 4%; width: min(660px, 58%); max-height: 86%; overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 34px 24px 16px; pointer-events: auto; isolation: isolate; animation: cafe-up .3s ease; }
 @keyframes cafe-up { from { opacity: 0; transform: translateY(14px); } }
 .cafe-box::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(to bottom, rgba(18, 12, 26, .86), rgba(18, 12, 26, .95)); border-top: 1px solid rgba(255, 255, 255, .2); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%); }
 .cafe-box::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(to right, var(--pink), transparent 80%); }
-.cafe-plate { position: absolute; left: 14px; top: 0; transform: translateY(-58%); display: flex; align-items: baseline; gap: 10px; padding: 7px 34px 7px 16px; background: linear-gradient(100deg, var(--pink), var(--pink-2)); clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 0 100%); max-width: calc(100% - 60px); }
+.cafe-plate { position: sticky; top: -34px; margin: -34px -10px 12px; z-index: 1; display: flex; align-items: baseline; gap: 10px; padding: 7px 34px 7px 16px; background: linear-gradient(100deg, var(--pink), var(--pink-2)); clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 0 100%); max-width: calc(100% - 60px); }
 .cafe-card[data-kind="wait"] .cafe-plate { background: linear-gradient(100deg, #E08A00, var(--amber)); }
 .cafe-card[data-kind="sub"] .cafe-plate { background: linear-gradient(100deg, #34508E, #5B7FD0); }
 .cafe-name { font: 800 1.2rem/1.15 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cafe-role { font: 700 .76rem/1 var(--font); opacity: .92; white-space: nowrap; }
+.cafe-chip { align-self: center; margin-left: 2px; padding: 3px 8px; border-radius: 99px; font: 800 .66rem/1 var(--font); letter-spacing: .03em; text-transform: uppercase; background: rgba(0, 0, 0, .28); }
+.cafe-chip[data-st="work"]::before { content: '● '; color: #7CFFB2; }
+.cafe-chip[data-st="wait"]::before { content: '● '; color: #FFE08A; }
+.cafe-chip[data-st="rest"]::before { content: '● '; color: #D0D6E0; }
+/* the meters: context, cost, time, what it has done */
+.cafe-meters { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.5fr; gap: 8px; margin: 0 0 10px; }
+.cafe-meters[hidden] { display: none; }
+.cafe-m { display: grid; gap: 3px; padding: 7px 9px; border-radius: 8px; background: rgba(255, 255, 255, .06); min-width: 0; }
+.cafe-m small { font: 700 .62rem/1 var(--font); letter-spacing: .05em; text-transform: uppercase; opacity: .6; }
+.cafe-m b { font: 800 .86rem/1.2 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cafe-ctx { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.cafe-ctx i { display: block; height: 100%; background: linear-gradient(to right, #5BC8FF, var(--pink-2)); transition: width .6s ease; }
+.cafe-ctx i[data-hot="true"] { background: linear-gradient(to right, var(--amber), #FF5A5A); }
+/* its last steps, newest first */
+.cafe-steps { margin: 0 0 10px; padding: 0; list-style: none; display: grid; gap: 4px; }
+.cafe-steps[hidden] { display: none; }
+.cafe-steps li { display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 8px; font: 500 .8rem/1.3 var(--font); color: rgba(255, 255, 255, .78); }
+.cafe-steps li:first-child { color: #fff; font-weight: 700; }
+.cafe-steps li.is-new { animation: cafe-step .5s ease; }
+@keyframes cafe-step { from { opacity: 0; transform: translateX(-8px); } }
+.cafe-steps li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cafe-steps time { font: 600 .68rem/1 var(--font); opacity: .5; }
+.cafe-steps .ic { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+/* a line back to its AI */
+.cafe-reply { display: flex; gap: 8px; margin: 12px 0 0; }
+.cafe-reply[hidden] { display: none; }
+.cafe-reply input { flex: 1; min-width: 0; padding: 9px 12px; border: 1.5px solid rgba(255, 255, 255, .25); border-radius: 10px; background: rgba(0, 0, 0, .3); color: #fff; font: 500 .9rem/1.2 var(--font); outline: none; }
+.cafe-reply input:focus { border-color: var(--pink-2); box-shadow: 0 0 0 3px rgba(255, 95, 168, .25); }
+.cafe-reply button { all: unset; width: 38px; border-radius: 10px; display: grid; place-items: center; cursor: pointer; background: var(--pink); }
+.cafe-reply button:hover { background: var(--pink-2); }
+.cafe-reply .ic { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .cafe-x { all: unset; position: absolute; right: 10px; top: 8px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: rgba(255, 255, 255, .1); }
 .cafe-x:hover { background: rgba(255, 255, 255, .22); }
-.cafe-doing { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 8px; padding: 4px 10px; border-radius: 99px; background: rgba(255, 255, 255, .1); font: 600 .8rem/1.3 var(--font); color: rgba(255, 255, 255, .85); max-width: 100%; }
-.cafe-doing[hidden] { display: none; }
-.cafe-doing .ic { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.cafe-text { margin: 0; font: 500 1.06rem/1.6 var(--font); min-height: 1.6em; max-height: 9.6em; overflow-y: auto; overflow-wrap: anywhere; overscroll-behavior: contain; }
+.cafe-text { margin: 0; font: 500 1.04rem/1.6 var(--font); min-height: 1.6em; max-height: 8em; overflow-y: auto; overflow-wrap: anywhere; overscroll-behavior: contain; }
 .cafe-task { margin: 8px 0 0; font: 500 .82rem/1.45 var(--font); color: rgba(255, 255, 255, .62); }
 .cafe-task:empty, .cafe-todo:empty { display: none; }
 .cafe-todo { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; font: 500 .8rem/1.35 var(--font); color: rgba(255, 255, 255, .78); }
@@ -89,7 +121,8 @@
 @container (max-width: 700px) {
   .cafe-portrait { height: 62%; left: -6%; }
   .cafe-box { right: 12px; width: calc(100% - 24px); padding: 28px 16px 14px; }
+  .cafe-meters { grid-template-columns: 1fr 1fr; }
   .cafe-places { grid-template-columns: repeat(2, 112px); }
   .cafe-sign small { display: none; }
 }
-@media (prefers-reduced-motion: reduce) { .cafe-portrait.is-in { animation: none; opacity: 1; transform: none; } .cafe-box { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .cafe-portrait.is-in { animation: none; opacity: 1; transform: none; } .cafe-box, .cafe-vnbg, .cafe-steps li.is-new { animation: none; } }

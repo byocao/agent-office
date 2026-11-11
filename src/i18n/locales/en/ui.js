@@ -105,8 +105,12 @@ export default {
     walkInTitle: 'Walk in: explore the office in first person',
   },
   cafe: {
+    stage: { street: 'Neon street', church: 'Cathedral', arcade: 'Arcade' },
+    ctx: 'Context', cost: 'Cost', onIt: 'On it for', restFor: 'Resting for', did: 'Done',
+    replyTo: 'Message {name}…', send: 'Send', sent: 'Sent to {name} ✉️', sentDemo: 'Demo: your message to {name} was not sent anywhere',
+    cantSend: "Couldn't find {name}'s conversation to send to",
     label: 'The office as Claude Café, side on',
-    viewTitle: 'Change the scene', log: 'Backlog', fullscreen: 'Full screen', close: 'Close',
+    viewTitle: 'Change the stage', log: 'Backlog', fullscreen: 'Full screen', close: 'Close',
     approve: 'Approve now', open: 'Open the session', swap: 'Another character',
     helper: 'Helper', helperOf: "{name}'s helper",
     hello: "Hi all! I'm on {proj} ✨", waiting: 'Waiting for you!', coffee: 'Coffee up ☕',
